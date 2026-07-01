@@ -5,7 +5,7 @@ import java.util.Observable;
 
 
 /** The state of a game of 2048.
- *  @author TODO: YOUR NAME HERE
+ *  @author Andy
  */
 public class Model extends Observable {
     /** Current contents of the board. */
@@ -20,6 +20,7 @@ public class Model extends Observable {
     /* Coordinate System: column C, row R of the board (where row 0,
      * column 0 is the lower-left corner of the board) will correspond
      * to board.tile(c, r).  Be careful! It works like (x, y) coordinates.
+     * 和直角坐标系一样的逻辑。
      */
 
     /** Largest piece value. */
@@ -106,14 +107,51 @@ public class Model extends Observable {
      *    value, then the leading two tiles in the direction of motion merge,
      *    and the trailing tile does not.
      * */
-    public boolean tilt(Side side) {
+    /**All movements of tiles on the board must be completed using the move method provided by the Board class.
+     * All tiles of the board must be accessed using the tile method provided by the Board class.
+     * Due to some details in the GUI implementation, you should only call move on a given tile once per call to tilt
+     */
+
+     public boolean tilt(Side side) {
         boolean changed;
         changed = false;
 
-        // TODO: Modify this.board (and perhaps this.score) to account
-        // for the tilt to the Side SIDE. If the board changed, set the
-        // changed local variable to true.
+        board.setViewingPerspective(side);
+        boolean[][] merged = new boolean[board.size()][board.size()];//用于记录是否已经 merge 过
 
+         for (int c = 0; c < board.size(); c++) {
+             for (int r = board.size() - 2; r >= 0; r--) {
+                 Tile t = board.tile(c, r);
+
+                 if (t != null) {
+                     int targetRow = r; // 先假设停在原地
+
+                     while(targetRow + 1 != board.size()){
+                         Tile next = board.tile(c,targetRow+1);//指针的上一个
+                         if(next == null){
+                             targetRow++;
+                         }else if(next.value() == t.value() && !merged[c][targetRow+1]){
+                             merged[c][targetRow+1] = true;// 标记该位置已合并
+                             score += 2 * t.value();
+                             targetRow++;
+                             break;
+                         }else {
+                             break;
+                         }
+                     }
+
+                     if (targetRow != r) {
+                         board.move(c, targetRow, t);
+                         changed = true; // 只要方块动了，状态就改变了
+                     }
+                 }
+             }
+         }
+
+
+
+
+        board.setViewingPerspective(Side.NORTH);
         checkGameOver();
         if (changed) {
             setChanged();
@@ -136,8 +174,17 @@ public class Model extends Observable {
     /** Returns true if at least one space on the Board is empty.
      *  Empty spaces are stored as null.
      * */
+    /** use the tile(int col, int row) and size() methods of the Board class. */
     public static boolean emptySpaceExists(Board b) {
-        // TODO: Fill in this function.
+        int col = 0;
+        int row = 0;
+        for(; col < b.size() ; col+=1){
+            for(row = 0; row < b.size() ; row+=1){
+                if(b.tile(col,row) == null){
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -147,7 +194,15 @@ public class Model extends Observable {
      * given a Tile object t, we get its value with t.value().
      */
     public static boolean maxTileExists(Board b) {
-        // TODO: Fill in this function.
+        int col = 0;
+        int row = 0;
+        for(; col < b.size() ; col+=1){
+            for(row = 0; row < b.size() ; row+=1){
+                if(b.tile(col,row) != null &&b.tile(col,row).value() == MAX_PIECE){//要注意这里要判断是否为空
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -158,7 +213,26 @@ public class Model extends Observable {
      * 2. There are two adjacent tiles with the same value.
      */
     public static boolean atLeastOneMoveExists(Board b) {
-        // TODO: Fill in this function.
+        int col = 0;
+        int row = 0;
+        if(emptySpaceExists(b)){
+            return true;
+        }else{
+            for(; col < b.size()-1 ; col++) {
+                for (row = 0; row < b.size(); row ++) {
+                    if (b.tile(col, row).value() == b.tile(col+1, row).value()) {
+                        return true;
+                    }
+                }
+            }
+            for(col = 0; col < b.size() ; col++) {
+                for (row = 0; row < b.size()-1; row ++) {
+                    if (b.tile(col, row).value() == b.tile(col, row + 1).value()) {
+                        return true;
+                    }
+                }
+            }
+        }
         return false;
     }
 
