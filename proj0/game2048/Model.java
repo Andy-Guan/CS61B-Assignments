@@ -113,11 +113,11 @@ public class Model extends Observable {
      */
 
      public boolean tilt(Side side) {
-        boolean changed;
-        changed = false;
+         boolean changed;
+         changed = false;
 
-        board.setViewingPerspective(side);
-        boolean[][] merged = new boolean[board.size()][board.size()];//用于记录是否已经 merge 过
+         board.setViewingPerspective(side);
+         boolean[][] merged = new boolean[board.size()][board.size()];//用于记录是否已经 merge 过
 
          for (int c = 0; c < board.size(); c++) {
              for (int r = board.size() - 2; r >= 0; r--) {
@@ -147,9 +147,6 @@ public class Model extends Observable {
                  }
              }
          }
-
-
-
 
         board.setViewingPerspective(Side.NORTH);
         checkGameOver();
