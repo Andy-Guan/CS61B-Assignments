@@ -4,6 +4,7 @@ public class IntList {
     public int first;
     public IntList rest;
 
+    /** 初始化 */
     public IntList(int f, IntList r) {
         first = f;
         rest = r;

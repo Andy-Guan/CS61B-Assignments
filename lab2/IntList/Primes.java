@@ -68,6 +68,7 @@ public class Primes {
     }
 
     /** Driver Code */
+    /** 素数 */
     public static void main(String[] args) {
         /* Print the first 20 primes */
         int primeCount = 0;
