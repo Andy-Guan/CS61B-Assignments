@@ -22,7 +22,32 @@ public class TimeSLList {
     }
 
     public static void timeGetLast() {
-        // TODO: YOUR CODE HERE
+        SLList testing = new SLList();
+        AList Ns = new AList();
+        AList Time = new AList();
+        AList Op = new AList();
+        int maxepochs = 256;
+        int[] arr = {1,2,4,8,16,32,64,128,256,512,1024,2048};
+        int i = 1;
+        int M = 10000; //取出次数
+        int count = 0;
+        for(; i <= maxepochs * 1000; i++ ){
+            testing.addLast(5);
+            if(i/1000 == arr[count]){
+                Stopwatch sw = new Stopwatch();
+                int op = 1;
+                for(;op <= M;op++) {
+                    testing.getLast();
+                }
+                double timeInSeconds = sw.elapsedTime();
+                Ns.addLast(i);
+                Time.addLast(timeInSeconds);
+                Op.addLast(M);
+                count++;
+            }
+        }
+        printTimingTable(Ns,Time,Op);
+
     }
 
 }
