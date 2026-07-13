@@ -21,7 +21,7 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
 
     /** Creates an empty LinkedListDeque */
     public LinkedListDeque() {
-        sentinel = new IntNode(null, null,null);
+        sentinel = new IntNode(null, null, null);
         sentinel.prev = sentinel;
         sentinel.next = sentinel;
         size = 0;
@@ -112,7 +112,9 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T> {
 
     /** It's a helper function to hide IntNode */
     private T getRecursiveHelper(IntNode curr, int idx) {
-        if (idx == 0) {return curr.item; }
+        if (idx == 0) {
+            return curr.item;
+        }
         return getRecursiveHelper(curr.next, idx - 1);
     }
     public T getRecursive(int index) {
