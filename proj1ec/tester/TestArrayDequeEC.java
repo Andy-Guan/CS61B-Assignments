@@ -33,7 +33,7 @@ public class TestArrayDequeEC {
                     if (correctDeque.size() > 0) {
                         Integer expected = correctDeque.removeFirst();
                         Integer actual = bugDeque.removeFirst();
-                        assertEquals("removeFirst 结果不匹配！", expected, actual);
+                        assertEquals(expected, actual);
                     }
 
                 } else if (operationNumber == 3) {
@@ -41,7 +41,7 @@ public class TestArrayDequeEC {
                     if (correctDeque.size() > 0) {
                         Integer expected = correctDeque.removeLast();
                         Integer actual = bugDeque.removeLast();
-                        assertEquals("removeLast 结果不匹配！", expected, actual);
+                        assertEquals(expected, actual);
                     }
                 }
             }
@@ -93,7 +93,6 @@ public class TestArrayDequeEC {
                         Integer expected = solution.removeLast();
                         Integer actual = student.removeLast();
 
-                        // 3. 将 operationHistory 作为第一个参数传入！
                         assertEquals(operationHistory.toString(), expected, actual);
                     }
                 }
