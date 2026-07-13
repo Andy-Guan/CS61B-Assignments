@@ -1,14 +1,18 @@
 package deque;
 
 
-public class ArrayDeque<T> {
+import java.util.Iterator;
+
+public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
 
     private T[] items;
     private int size;
     private int nextFirst;
     private int nextLast;
 
-    /** Creates an empty list. */
+    /**
+     * Creates an empty list.
+     */
     public ArrayDeque() {
         items = (T[]) new Object[8];
         size = 0;
@@ -16,20 +20,24 @@ public class ArrayDeque<T> {
         nextLast = 5;
     }
 
-    /** 改变数组格局 */
-    public void resize(int capacity){
+    /**
+     * 改变数组格局
+     */
+    private void resize(int capacity) {
         int i = 0;
         T[] newitems = (T[]) new Object[capacity];
-        for(;i < size; i++){
+        for (; i < size; i++) {
             newitems[i] = items[plusOne(nextFirst)];
-            nextFirst = plusOne(nextFirst)
+            nextFirst = plusOne(nextFirst);
         }
-        nextFirst = capacity -1;
+        nextFirst = capacity - 1;
         nextLast = size;
         items = newitems;
     }
 
-    /** 计算某个索引向左移一位后的新索引（处理绕回） */
+    /**
+     * 计算某个索引向左移一位后的新索引（处理绕回）
+     */
     private int minusOne(int index) {
         if (index < 1) {
             return items.length - 1;
@@ -37,7 +45,9 @@ public class ArrayDeque<T> {
         return index - 1;
     }
 
-    /** 计算某个索引向右移一位后的新索引（处理绕回） */
+    /**
+     * 计算某个索引向右移一位后的新索引（处理绕回）
+     */
     private int plusOne(int index) {
         if (index + 1 == items.length) {
             return 0;
@@ -45,7 +55,8 @@ public class ArrayDeque<T> {
         return index + 1;
     }
 
-    public void addFirst(T item){
+    @Override
+    public void addFirst(T item) {
         if (size == items.length) {
             resize(items.length * 2);
         }
@@ -54,7 +65,8 @@ public class ArrayDeque<T> {
         size++;
     }
 
-    public void addLast(T item){
+    @Override
+    public void addLast(T item) {
         if (size == items.length) {
             resize(items.length * 2);
         }
@@ -64,20 +76,22 @@ public class ArrayDeque<T> {
 
     }
 
-    public boolean isEmpty(){
-        if(size == 0){
+    @Override
+    public boolean isEmpty() {
+        if (size == 0) {
             return true;
-        }else{
+        } else {
             return false;
         }
     }
 
-    public int size(){
+    @Override
+    public int size() {
         return size;
     }
 
-
-    public void printDeque(){
+    @Override
+    public void printDeque() {
         int count = plusOne(nextFirst);
         while (count != nextFirst) {
             System.out.print(items[count] + " ");
@@ -86,6 +100,7 @@ public class ArrayDeque<T> {
         System.out.println();
     }
 
+    @Override
     public T removeFirst() {
         if (size == 0) {
             return null;
@@ -100,7 +115,8 @@ public class ArrayDeque<T> {
         return returnItem;
     }
 
-    public T removeLast(){
+    @Override
+    public T removeLast() {
         if (size == 0) {
             return null;
         }
@@ -114,11 +130,65 @@ public class ArrayDeque<T> {
         return returnItem;
     }
 
-    public T get(int index){
+    @Override
+    public T get(int index) {
         if (index >= size || index < 0) {
             return null;
         }
         int start = plusOne(nextFirst);
         int actualIndex = (start + index) % items.length;
         return items[actualIndex];
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (!(o instanceof Deque)) {
+            return false;
+        }
+
+        Deque<T> other = (Deque<T>) o;
+
+        if (this.size() != other.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < this.size(); i++) {
+            if (!this.get(i).equals(other.get(i))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+        return new ArrayDequeIterator();
+    }
+
+    // 定义一个私有内部类，专门用来遍历这个 ArrayDeque
+    private class ArrayDequeIterator implements Iterator<T> {
+        private int pos;
+
+        public ArrayDequeIterator() {
+            pos = 0;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return pos < size;
+        }
+
+        @Override
+        public T next() {
+            T returnItem = get(pos);
+            pos += 1;
+            return returnItem;
+        }
+    }
 }
