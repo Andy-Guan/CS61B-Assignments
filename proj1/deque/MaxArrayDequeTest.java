@@ -4,7 +4,6 @@ import org.junit.Test;
 import java.util.Comparator;
 import static org.junit.Assert.assertEquals;
 
-
 public class MaxArrayDequeTest {
     public class StringLengthComparator implements Comparator<String> {
         @Override
