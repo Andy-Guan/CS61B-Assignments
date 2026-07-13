@@ -17,17 +17,17 @@ public class MaxArrayDeque<T> extends ArrayDeque<T> {
      *     If the MaxArrayDeque is empty, simply return null
       */
     public T max() {
-        return max(maxComparator) ;
+        return max(maxComparator);
     }
 
     /**  returns the maximum element in the deque as governed by the parameter Comparator c.
      *     If the MaxArrayDeque is empty, simply return null
      */
     public T max(Comparator<T> c) {
-        if (isEmpty()){
+        if (isEmpty()) {
             return null;
         } else {
-            T maxItem = this.get(0) ;
+            T maxItem = this.get(0);
 
             for (T item : this) {
                 if (c.compare(item, maxItem) > 0) {
