@@ -1,9 +1,8 @@
 package deque;
 
-
 import java.util.Iterator;
 
-public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
+public class ArrayDeque<T> implements Deque<T>, Iterable<T> {
 
     private T[] items;
     private int size;
@@ -163,7 +162,6 @@ public class ArrayDeque<T> implements Deque<T>, Iterable<T>{
         return new ArrayDequeIterator();
     }
 
-    // 定义一个私有内部类，专门用来遍历这个 ArrayDeque
     private class ArrayDequeIterator implements Iterator<T> {
         private int pos;
 
