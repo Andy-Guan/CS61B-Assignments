@@ -27,6 +27,7 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T>{
         size = 0;
     }
 
+    /**
     public LinkedListDeque(T item) {
         sentinel = new IntNode(null, null, null);
         sentinel.prev = sentinel;
@@ -35,6 +36,8 @@ public class LinkedListDeque<T> implements Deque<T>, Iterable<T>{
         sentinel.prev = sentinel.next;
         size = 1;
     }
+    */
+
 
     @Override
     /** Adds x to the front of the list. */
