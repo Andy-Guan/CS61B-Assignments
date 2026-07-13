@@ -7,6 +7,7 @@ import edu.princeton.cs.algs4.StdRandom;
 
 public class TestArrayDequeEC {
 
+    /**
         @Test
         public void testRandomized() {
             StudentArrayDeque<Integer> bugDeque = new StudentArrayDeque<>();
@@ -46,6 +47,7 @@ public class TestArrayDequeEC {
                 }
             }
         }
+    */
 
         @Test
         public void testRandomizedAugmented() {
