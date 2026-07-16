@@ -1,7 +1,9 @@
 package capers;
 
 import java.io.File;
+import java.util.Arrays;
 
+import static capers.Dog.DOG_FOLDER;
 import static capers.Dog.fromFile;
 import static capers.Utils.*;
 
@@ -29,6 +31,10 @@ public class CapersRepository {
         if (!CAPERS_FOLDER.exists()) {
             CAPERS_FOLDER.mkdirs();
         }
+
+        if (!DOG_FOLDER.exists()) {
+            DOG_FOLDER.mkdirs();
+        }
     }
 
     /**
@@ -37,13 +43,13 @@ public class CapersRepository {
      * @param text String of the text to be appended to the story
      */
     public static void writeStory(String text) {
-        final File STORY_FILE = Utils.join(".capers", "story");
+        final File STORY_FILE = Utils.join(CAPERS_FOLDER, "story");
         String oldContent = "";
         if (STORY_FILE.exists()) {
             oldContent = Utils.readContentsAsString(STORY_FILE);
         }
-        Utils.writeContents(STORY_FILE, oldContent + text);
-
+        Utils.writeContents(STORY_FILE, oldContent + text + "\n");
+        System.out.println(Utils.readContentsAsString(STORY_FILE));
     }
 
     /**
@@ -65,7 +71,8 @@ public class CapersRepository {
      */
     public static void celebrateBirthday(String name) {
         Dog dog = fromFile(name);
-        System.out.println(dog.toString());
         dog.haveBirthday();
+        File dogFile = Utils.join(DOG_FOLDER, name);
+        Utils.writeObject(dogFile, dog);
     }
 }
