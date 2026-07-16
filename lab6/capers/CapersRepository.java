@@ -35,7 +35,13 @@ public class CapersRepository {
      * @param text String of the text to be appended to the story
      */
     public static void writeStory(String text) {
-        // TODO
+        final File STORY_FILE = Utils.join(".capers", "story");
+        String oldContent = "";
+        if (STORY_FILE.exists()) {
+            oldContent = Utils.readContentsAsString(STORY_FILE);
+        }
+        Utils.writeContents(STORY_FILE, oldContent + text);
+
     }
 
     /**
