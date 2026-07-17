@@ -1,0 +1,11 @@
+RandomSpeed:            times      ULLMap       BSTMap      TreeMap        HashMap
+stringlength: 10         100          0           0           0               0
+                        10000       0.13          0           0               0
+                        100000   Stackoverflow   0.03        0.03            0.01
+                       1000000   Stackoverflow   0.65        0.63            0.24
+                      10000000   Stackoverflow   13.89       11.98           3.10
+
+OrderSpeed:              100          0           0           0               0
+                        10000       0.18          0.27        0               0
+                       100000    Stackoverflow Stackoverflow  0.03           0.02
+                       10000000  Stackoverflow Stackoverflow  2.86           2.36
