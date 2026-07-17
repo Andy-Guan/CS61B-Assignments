@@ -68,7 +68,7 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         return root.size;
     }
 
-    public int size(BSTNode Node){
+    private int size(BSTNode Node){
         if (Node == null){
             return 0;
         }
@@ -102,11 +102,14 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         return node;
     }
 
+
+    /* For an extra challenge implement keySet() and iterator without using a second instance variable to store the set of keys. */
     @Override
     public Set<K> keySet(){
         throw new UnsupportedOperationException();
     }
 
+    /* For remove, you should return null if the argument key does not exist in the BSTMap. Otherwise, delete the key-value pair (key, value) and return value. */
     @Override
     public V remove(K key){
         throw new UnsupportedOperationException();
@@ -117,7 +120,7 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
         throw new UnsupportedOperationException();
     }
 
-
+/*When implementing the iterator method, you should return an iterator over the keys. */
     @Override
     public Iterator<K> iterator() {
         return new BSTMapIter();
