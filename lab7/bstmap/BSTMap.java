@@ -1,7 +1,9 @@
 package bstmap;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.TreeSet;
 
 public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
     private BSTNode root;             // root of BST
@@ -24,7 +26,7 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
     }
 
 
-    /** Removes all of the mappings from this map. */
+    @Override
     public void clear(){
         root = null;
     }
@@ -79,9 +81,7 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
 
     @Override
     public void put(K key, V value){
-
-        /**
-
+        /*
         if (key == null) {
             throw new IllegalArgumentException("calls put() with a null key");
         }
@@ -103,51 +103,135 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
     }
 
 
-    /* For an extra challenge implement keySet() and iterator without using a second instance variable to store the set of keys. */
+    /* Returns a Set view of the keys contained in this map.
+    For an extra challenge implement keySet() and iterator without using a second instance variable to store the set of keys.
+     */
     @Override
     public Set<K> keySet(){
-        throw new UnsupportedOperationException();
+        Set<K> keySet = new TreeSet<>();
+        traverseCollect(root, keySet);
+        return keySet;
+    }
+
+    private void traverseCollect(BSTNode curr, Set<K> container) {
+        if (curr == null) return;
+        traverseCollect(curr.left, container);
+        container.add(curr.key);
+        traverseCollect(curr.right, container);
     }
 
     /* For remove, you should return null if the argument key does not exist in the BSTMap. Otherwise, delete the key-value pair (key, value) and return value. */
     @Override
     public V remove(K key){
-        throw new UnsupportedOperationException();
+        V oldVal = get(key);
+        if (oldVal == null) {
+            return null;
+        }
+        root = removeHelper(root, key);
+        return oldVal;
+    }
+
+    private BSTNode removeHelper(BSTNode curr, K targetKey) {
+        if (curr == null) return null;
+        int cmp = targetKey.compareTo(curr.key);
+        if (cmp < 0) {
+            curr.left = removeHelper(curr.left, targetKey);
+        }
+        else if (cmp > 0) {
+            curr.right = removeHelper(curr.right, targetKey);
+        }
+        else {
+            if (curr.left == null && curr.right == null) {
+                return null;
+            }
+            else if (curr.left == null) {
+                return curr.right;
+            }
+            else if (curr.right == null) {
+                return curr.left;
+            }
+            BSTNode successor = findMin(curr.right);
+            curr.key = successor.key;
+            curr.val = successor.val;
+            curr.right = removeHelper(curr.right, successor.key);
+        }
+        curr.size = 1 + size(curr.left) + size(curr.right);
+        return curr;
+    }
+
+
+    private BSTNode findMin(BSTNode node) {
+        while (node.left != null) {
+            node = node.left;
+        }
+        return node;
+    }
+
+    private BSTNode findMax(BSTNode node) {
+        while (node.right != null) {
+            node = node.right;
+        }
+        return node;
     }
 
     @Override
     public V remove(K key, V value){
-        throw new UnsupportedOperationException();
+        V existVal = get(key);
+        if (existVal == null || !existVal.equals(value)) {
+            return null;
+        }
+        root = removeHelper(root, key);
+        return existVal;
     }
 
-/*When implementing the iterator method, you should return an iterator over the keys. */
+    /*When implementing the iterator method, you should return an iterator over the keys. */
     @Override
     public Iterator<K> iterator() {
-        return new BSTMapIter();
+        return new BSTMapIter(root);
     }
 
     private class BSTMapIter implements Iterator<K> {
+        private ArrayList<K> keyList;
+        private int ptr;
 
+        public BSTMapIter(BSTNode rootNode) {
+            keyList = new ArrayList<>();
+            ptr = 0;
+            collectInOrder(rootNode);
+        }
 
-        public BSTMapIter() {
-            throw new UnsupportedOperationException();
+        private void collectInOrder(BSTNode curr) {
+            if (curr == null) return;
+            collectInOrder(curr.left);
+            keyList.add(curr.key);
+            collectInOrder(curr.right);
         }
 
         @Override
         public boolean hasNext() {
-            throw new UnsupportedOperationException();
+            return ptr < keyList.size();
         }
 
         @Override
         public K next() {
-            throw new UnsupportedOperationException();
+            if (!hasNext()) {
+                throw new NullPointerException();
+            }
+            return keyList.get(ptr++);
         }
 
 
     }
 
-    public void printInOrder(){
-        throw new UnsupportedOperationException();
+    public void printInOrder() {
+        printHelper(root);
+    }
+
+    private void printHelper(BSTNode curr) {
+        if (curr == null) return;
+        printHelper(curr.left);
+        System.out.print(curr.key + ":" + curr.val + "\n");
+        printHelper(curr.right);
     }
 
 }
