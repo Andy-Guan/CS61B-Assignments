@@ -3,18 +3,10 @@ package hashmap;
 import java.util.*;
 
 /**
- *  A hash table-backed Map implementation. Provides amortized constant time
- *  access to elements via get(), remove(), and put() in the best case.
- *
- *  Assumes null keys will never be inserted, and does not resize down upon remove().
  *  @author Andy
  */
 public class MyHashMap<K, V> implements Map61B<K, V> {
 
-    /**
-     * Protected helper class to store key/value pairs
-     * The protected qualifier allows subclass access
-     */
     protected class Node {
         K key;
         V value;
@@ -26,11 +18,11 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     }
 
     /* Instance Variables */
-    private Collection<Node>[] buckets;
+    private Collection<Node>[] buckets; // 哈希表的每一个格子
     private int initialSize;
     private double maxLoad;
     private int size;
-    private HashSet<K> keys;
+    private HashSet<K> keys; // 储存每一个key
 
 
     /** Constructors */
@@ -78,9 +70,6 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
      * Each of these methods is supported by java.util.Collection,
      * Most data structures in Java inherit from Collection, so we
      * can use almost any data structure as our buckets.
-     *
-     * Override this method to use different data structures as
-     * the underlying bucket type
      *
      * BE SURE TO CALL THIS FACTORY METHOD INSTEAD OF CREATING YOUR
      * OWN BUCKET DATA STRUCTURES WITH THE NEW OPERATOR!
@@ -161,27 +150,22 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
         keys.add(key);
 
         if (((double) size / buckets.length) > maxLoad) {
-            resize(buckets.length * 2); // 扩大为原来的 2 倍
+            resize(buckets.length * 2);
         }
     }
 
     private void resize(int newCapacity) {
-        // 1. 创建一个更大的新数组
         Collection<Node>[] newBuckets = createTable(newCapacity);
         for (int i = 0; i < newCapacity; i++) {
             newBuckets[i] = createBucket();
         }
 
-        // 2. 将旧数组里的所有节点，重新计算哈希值，放入新数组
         for (int i = 0; i < buckets.length; i++) {
             for (Node node : buckets[i]) {
-                // 注意：这里必须用 newCapacity 来取余，因为数组长度变了
                 int newIndex = Math.floorMod(node.key.hashCode(), newCapacity);
                 newBuckets[newIndex].add(node);
             }
         }
-
-        // 3. 把当前 HashMap 的底层数组替换为新数组
         this.buckets = newBuckets;
     }
 
@@ -194,22 +178,63 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
         return this.keys.iterator();
     }
 
-    /* create a HashSet instance variable that holds all your keys */
-    /**
-     * Removes the mapping for the specified key from this map if present.
-     * Not required for Lab 8. If you don't implement this, throw an
-     * UnsupportedOperationException.
-     */
+    @Override
     public V remove(K key){
-        throw new UnsupportedOperationException();
+        if (key == null) {
+            return null;
+        }
+
+        int index = getIndex(key);
+        Collection<Node> bucket = buckets[index];
+
+        Node nodeToRemove = null;
+        for (Node node : bucket) {
+            if (node.key.equals(key)) {
+                nodeToRemove = node;
+                break;
+            }
+        }
+
+        if (nodeToRemove != null) {
+            bucket.remove(nodeToRemove);
+            size--;
+            if (((double) size / buckets.length) > maxLoad) {
+                resize(buckets.length / 2);
+            }
+            keys.remove(key);
+            return nodeToRemove.value;
+        }
+
+        return null;
     }
 
-    /**
-     * Removes the entry for the specified key only if it is currently mapped to
-     * the specified value. Not required for Lab 8. If you don't implement this,
-     * throw an UnsupportedOperationException.
-     */
+    @Override
     public V remove(K key, V value){
-        throw new UnsupportedOperationException();
+        if (key == null) {
+            return null;
+        }
+
+        int index = getIndex(key);
+        Collection<Node> bucket = buckets[index];
+
+        Node nodeToRemove = null;
+        for (Node node : bucket) {
+            if (node.key.equals(key) && node.value.equals(value)) {
+                nodeToRemove = node;
+                break;
+            }
+        }
+
+        if (nodeToRemove != null) {
+            bucket.remove(nodeToRemove);
+            size--;
+            if (((double) size / buckets.length) > maxLoad) {
+                resize(buckets.length / 2);
+            }
+            keys.remove(key);
+            return nodeToRemove.value;
+        }
+
+        return null;
     }
 }
