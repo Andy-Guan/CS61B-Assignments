@@ -97,7 +97,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     }
 
     @Override
-    public void clear(){
+    public void clear() {
         this.size = 0;
         this.buckets = createTable(initialSize);
         for (int i = 0; i < initialSize; i++) {
@@ -107,13 +107,15 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     }
 
     @Override
-    public boolean containsKey(K key){
+    public boolean containsKey(K key) {
         return get(key) != null;
     }
 
     @Override
-    public V get(K key){
-        if (key == null) return null;
+    public V get(K key) {
+        if (key == null) {
+            return null;
+        }
         int index = getIndex(key);
         Collection<Node> bucket = buckets[index];
 
@@ -126,13 +128,15 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     }
 
     @Override
-    public int size(){
+    public int size() {
         return this.size;
     }
 
     @Override
-    public void put(K key, V value){
-        if (key == null) return;
+    public void put(K key, V value) {
+        if (key == null) {
+            return;
+        }
 
         int index = getIndex(key);
         Collection<Node> bucket = buckets[index];
@@ -170,7 +174,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     }
 
     /** Returns a Set view of the keys contained in this map. */
-    public Set<K> keySet(){
+    public Set<K> keySet() {
         return this.keys;
     }
 
@@ -179,7 +183,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     }
 
     @Override
-    public V remove(K key){
+    public V remove(K key) {
         if (key == null) {
             return null;
         }
@@ -209,7 +213,7 @@ public class MyHashMap<K, V> implements Map61B<K, V> {
     }
 
     @Override
-    public V remove(K key, V value){
+    public V remove(K key, V value) {
         if (key == null) {
             return null;
         }
