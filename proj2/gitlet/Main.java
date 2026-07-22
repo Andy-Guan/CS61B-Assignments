@@ -12,6 +12,12 @@ public class Main {
         }
 
         String firstArg = args[0];
+
+        if (!firstArg.equals("init") && !Repository.GITLET_DIR.exists()) {
+            System.out.println("Not in an initialized Gitlet directory.");
+            System.exit(0);
+        }
+
         switch(firstArg) {
             case "init":
                 validateNumArgs(args, 1);

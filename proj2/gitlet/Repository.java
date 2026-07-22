@@ -243,14 +243,20 @@ public class Repository {
     /** checkout to a specific branch */
     public static void checkoutBranch(String branchName) {
         File targetBranchFile = Utils.join(REFS_HEADS_DIR, branchName);
+        String headContent = "refs/heads/" + branchName;
+
+        if (!targetBranchFile.exists()) {
+            targetBranchFile = Utils.join(REFS_REMOTES_DIR, branchName);
+            headContent = "refs/remotes/" + branchName;
+        }
 
         if (!targetBranchFile.exists()) {
             System.out.println("No such branch exists.");
             System.exit(0);
         }
 
-        String currentHead = Utils.readContentsAsString(HEAD); // "refs/heads/master"
-        String currentBranchName = currentHead.replace("refs/heads/", "");
+        String currentHead = Utils.readContentsAsString(HEAD);
+        String currentBranchName = currentHead.replace("refs/heads/", "").replace("refs/remotes/", "");
 
         if (branchName.equals(currentBranchName)) {
             System.out.println("No need to checkout the current branch.");
@@ -264,7 +270,7 @@ public class Repository {
 
         checkoutCommit(targetCommit);
 
-        Utils.writeContents(HEAD, "refs/heads/" + branchName);
+        Utils.writeContents(HEAD, headContent);
     }
 
     /** Create a new branch */
@@ -425,7 +431,7 @@ public class Repository {
     }
 
     /** Find the split point */
-    private static Commit getSplitPoint(String currentCommitSha1, String targetCommitSha1) {
+    private static String getSplitPointSha1(String currentCommitSha1, String targetCommitSha1) {
         java.util.HashSet<String> currentAncestors = new java.util.HashSet<>();
         java.util.Queue<String> queue = new java.util.LinkedList<>();
         java.util.HashSet<String> visited = new java.util.HashSet<>();
@@ -461,8 +467,7 @@ public class Repository {
             String sha1 = targetQueue.poll();
 
             if (currentAncestors.contains(sha1)) {
-                File splitCommitFile = Utils.join(OBJECT_DIR, sha1);
-                return Utils.readObject(splitCommitFile, Commit.class);
+                return sha1;
             }
 
             File commitFile = Utils.join(OBJECT_DIR, sha1);
@@ -512,8 +517,8 @@ public class Repository {
         Commit targetCommit = Utils.readObject(
                 Utils.join(OBJECT_DIR, targetCommitSha1), Commit.class);
 
-        Commit splitPoint = getSplitPoint(currentCommitSha1, targetCommitSha1);
-        String splitSha1 = Utils.sha1(Utils.serialize(splitPoint));
+        String splitSha1 = getSplitPointSha1(currentCommitSha1, targetCommitSha1);
+        Commit splitPoint = Utils.readObject(Utils.join(OBJECT_DIR, splitSha1), Commit.class);
 
         if (splitSha1.equals(targetCommitSha1)) {
             System.out.println("Given branch is an ancestor of the current branch.");
@@ -950,7 +955,7 @@ public class Repository {
         String localHeadSha1 = Utils.sha1(Utils.serialize(currentCommit));
 
         if (!remoteHeadSha1.isEmpty() && !isHistoryContains(localHeadSha1, remoteHeadSha1)) {
-            System.out.println("Please pull down to catch up with remote.");
+            System.out.println("Please pull down remote changes before pushing.");
             System.exit(0);
         }
 
