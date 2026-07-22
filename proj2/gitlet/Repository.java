@@ -359,12 +359,11 @@ public class Repository {
             File f = Utils.join(CWD, file);
             String cwdSha1 = Utils.sha1(Utils.readContents(f));
 
-            if (tracked.containsKey(file) &&
-                    !cwdSha1.equals(tracked.get(file)) &&
-                    !added.containsKey(file)) {
+            if (tracked.containsKey(file)
+                    && !cwdSha1.equals(tracked.get(file))
+                    && !added.containsKey(file)) {
                 modifiedNotStaged.add(file + " (modified)");
-            }
-            else if (added.containsKey(file) && !cwdSha1.equals(added.get(file))) {
+            } else if (added.containsKey(file) && !cwdSha1.equals(added.get(file))) {
                 modifiedNotStaged.add(file + " (modified)");
             }
         }
@@ -390,9 +389,9 @@ public class Repository {
         List<String> untrackedFiles = new java.util.ArrayList<>();
 
         for (String file : cwdFiles) {
-            if (!added.containsKey(file) &&
-                    (!tracked.containsKey(file) ||
-                            removed.contains(file))) {
+            if (!added.containsKey(file)
+                    && (!tracked.containsKey(file)
+                    || removed.contains(file))) {
                 untrackedFiles.add(file);
             }
         }
@@ -463,16 +462,23 @@ public class Repository {
             System.exit(0);
         }
 
-        String currentCommitSha1 = Utils.readContentsAsString(Utils.join(GITLET_DIR, currentHead));
-        Commit currentCommit = Utils.readObject(Utils.join(OBJECT_DIR, currentCommitSha1), Commit.class);
+        String currentCommitSha1 = Utils.readContentsAsString(
+                Utils.join(GITLET_DIR, currentHead));
+        Commit currentCommit = Utils.readObject(
+                Utils.join(OBJECT_DIR, currentCommitSha1), Commit.class);
 
         String targetCommitSha1 = Utils.readContentsAsString(targetBranchFile);
-        Commit targetCommit = Utils.readObject(Utils.join(OBJECT_DIR, targetCommitSha1), Commit.class);
+        Commit targetCommit = Utils.readObject(
+                Utils.join(OBJECT_DIR, targetCommitSha1), Commit.class);
 
         for (String targetFileName : targetCommit.getTrackedFiles().keySet()) {
             File cwdFile = Utils.join(CWD, targetFileName);
-            if (cwdFile.exists() && !currentCommit.getTrackedFiles().containsKey(targetFileName)) {
-                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+
+            if (cwdFile.exists()
+                    && !currentCommit.getTrackedFiles().containsKey(targetFileName)) {
+
+                System.out.println("There is an untracked file in the way; "
+                        + "delete it, or add and commit it first.");
                 System.exit(0);
             }
         }
@@ -561,8 +567,7 @@ public class Repository {
                     handleConflict(file, shaC, shaT);
                     hasConflict = true;
                 }
-            }
-            else {
+            } else {
                 if (shaC == null && shaT != null) {
                     checkoutFileFromCommit(targetCommit, file);
                     stageAddition(file, shaT);
@@ -699,8 +704,8 @@ public class Repository {
         for (String targetFileName : targetCommit.getTrackedFiles().keySet()) {
             File cwdFile = Utils.join(CWD, targetFileName);
             if (cwdFile.exists() && !currentCommit.getTrackedFiles().containsKey(targetFileName)) {
-                System.out.println("There is an untracked file in the way; " +
-                        "delete it, or add and commit it first.");
+                System.out.println("There is an untracked file in the way; "
+                        + "delete it, or add and commit it first.");
                 System.exit(0);
             }
         }
@@ -870,7 +875,9 @@ public class Repository {
         }
 
         File commitFile = Utils.join(OBJECT_DIR, currentSha1);
-        if (!commitFile.exists()) return false;
+        if (!commitFile.exists()) {
+            return false;
+        }
 
         Commit commit = Utils.readObject(commitFile, Commit.class);
         List<String> parents = commit.getParents();
