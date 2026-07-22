@@ -428,22 +428,34 @@ public class Repository {
     private static Commit getSplitPoint(String currentCommitSha1, String targetCommitSha1) {
         java.util.HashSet<String> currentAncestors = new java.util.HashSet<>();
         java.util.Queue<String> queue = new java.util.LinkedList<>();
+        java.util.HashSet<String> visited = new java.util.HashSet<>();
 
         queue.add(currentCommitSha1);
+        visited.add(currentCommitSha1);
+
         while (!queue.isEmpty()) {
             String sha1 = queue.poll();
             currentAncestors.add(sha1);
 
             File commitFile = Utils.join(OBJECT_DIR, sha1);
             Commit commit = Utils.readObject(commitFile, Commit.class);
+
             if (commit.getParents() != null) {
-                queue.addAll(commit.getParents());
+                for (String parent : commit.getParents()) {
+                    if (!visited.contains(parent)) {
+                        visited.add(parent);
+                        queue.add(parent);
+                    }
+                }
             }
         }
 
-        // BFS
+        // BFS for target branch
         java.util.Queue<String> targetQueue = new java.util.LinkedList<>();
+        java.util.HashSet<String> targetVisited = new java.util.HashSet<>();
+
         targetQueue.add(targetCommitSha1);
+        targetVisited.add(targetCommitSha1);
 
         while (!targetQueue.isEmpty()) {
             String sha1 = targetQueue.poll();
@@ -456,7 +468,12 @@ public class Repository {
             File commitFile = Utils.join(OBJECT_DIR, sha1);
             Commit commit = Utils.readObject(commitFile, Commit.class);
             if (commit.getParents() != null) {
-                targetQueue.addAll(commit.getParents());
+                for (String parent : commit.getParents()) {
+                    if (!targetVisited.contains(parent)) {
+                        targetVisited.add(parent);
+                        targetQueue.add(parent);
+                    }
+                }
             }
         }
 
@@ -504,7 +521,12 @@ public class Repository {
         }
 
         if (splitSha1.equals(currentCommitSha1)) {
-            checkoutBranch(branchName);
+            checkoutCommit(targetCommit);
+
+            String currentBranchPath = Utils.readContentsAsString(HEAD);
+            File currentBranchFile = Utils.join(GITLET_DIR, currentBranchPath);
+            Utils.writeContents(currentBranchFile, targetCommitSha1);
+
             System.out.println("Current branch fast-forwarded.");
             System.exit(0);
         }
@@ -655,6 +677,13 @@ public class Repository {
         if (shaT != null) {
             File blobT = Utils.join(OBJECT_DIR, shaT);
             contentT = Utils.readContentsAsString(blobT);
+        }
+
+        if (!contentC.isEmpty() && !contentC.endsWith("\n")) {
+            contentC += "\n";
+        }
+        if (!contentT.isEmpty() && !contentT.endsWith("\n")) {
+            contentT += "\n";
         }
 
         String conflictContent = "<<<<<<< HEAD\n"
