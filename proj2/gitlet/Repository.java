@@ -495,7 +495,6 @@ public class Repository {
         Commit targetCommit = Utils.readObject(
                 Utils.join(OBJECT_DIR, targetCommitSha1), Commit.class);
 
-
         Commit splitPoint = getSplitPoint(currentCommitSha1, targetCommitSha1);
         String splitSha1 = Utils.sha1(Utils.serialize(splitPoint));
 
@@ -519,6 +518,24 @@ public class Repository {
         allFiles.addAll(cFiles.keySet());
         allFiles.addAll(tFiles.keySet());
 
+        checkUntrackedFiles(allFiles, currentStage, spFiles, cFiles, tFiles);
+
+        boolean hasConflict = processMergeFiles(allFiles, spFiles, cFiles, tFiles, targetCommit);
+
+        if (hasConflict) {
+            System.out.println("Encountered a merge conflict.");
+        }
+
+        finalizeMergeCommit(branchName, currentBranchName, currentCommitSha1,
+                targetCommitSha1, currentCommit, currentStage);
+    }
+
+    /** Check the untracked file */
+    private static void checkUntrackedFiles(java.util.HashSet<String> allFiles,
+                                            Stage currentStage,
+                                            HashMap<String, String> spFiles,
+                                            HashMap<String, String> cFiles,
+                                            HashMap<String, String> tFiles) {
         for (String file : allFiles) {
             String shaC = cFiles.get(file);
             boolean isUntracked = Utils.join(CWD, file).exists()
@@ -552,19 +569,7 @@ public class Repository {
                 }
             }
         }
-        boolean hasConflict = processMergeFiles(allFiles, spFiles, cFiles, tFiles, targetCommit);
-
-        String mergeMessage = "Merged " + branchName + " into " + currentBranchName + ".";
-
-
-        if (hasConflict) {
-            System.out.println("Encountered a merge conflict.");
-        }
-
-        finalizeMergeCommit(branchName, currentBranchName, currentCommitSha1,
-                targetCommitSha1, currentCommit, currentStage);
     }
-
     /** Generate merge commit */
     private static void finalizeMergeCommit(String branchName, String currentBranchName,
                                             String p1, String p2,
