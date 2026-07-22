@@ -86,6 +86,10 @@ public class Main {
                 validateNumArgs(args, 1);
                 Repository.status();
                 break;
+            case "merge":
+                validateNumArgs(args, 2);
+                Repository.merge(args[1]);
+                break;
             case "global-log":
                 validateNumArgs(args, 1);
                 Repository.globalLog();
