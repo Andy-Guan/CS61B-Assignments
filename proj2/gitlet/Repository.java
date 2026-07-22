@@ -365,8 +365,41 @@ public class Repository {
 
     private static void printModifiedNotStaged(Commit commit, Stage stage, List<String> cwdFiles) {
         System.out.println("=== Modifications Not Staged For Commit ===");
-        // 此处放入我们上一步修复好的 HashSet 去重逻辑...
-        // （为了节省篇幅省略，直接贴上一步修改好的完整逻辑即可）
+        java.util.HashSet<String> modifiedNotStagedSet = new java.util.HashSet<>();
+        HashMap<String, String> tracked = commit.getTrackedFiles();
+        HashMap<String, String> added = stage.getAddition();
+        HashSet<String> removed = stage.getRemoval();
+
+        for (String file : cwdFiles) {
+            File f = Utils.join(CWD, file);
+            String cwdSha1 = Utils.sha1(Utils.readContents(f));
+
+            if (tracked.containsKey(file)
+                    && !cwdSha1.equals(tracked.get(file))
+                    && !added.containsKey(file)
+                    && !removed.contains(file)) {
+                modifiedNotStagedSet.add(file + " (modified)");
+            } else if (added.containsKey(file) && !cwdSha1.equals(added.get(file))) {
+                modifiedNotStagedSet.add(file + " (modified)");
+            }
+        }
+
+        for (String file : tracked.keySet()) {
+            if (!cwdFiles.contains(file) && !removed.contains(file)) {
+                modifiedNotStagedSet.add(file + " (deleted)");
+            }
+        }
+        for (String file : added.keySet()) {
+            if (!cwdFiles.contains(file)) {
+                modifiedNotStagedSet.add(file + " (deleted)");
+            }
+        }
+
+        List<String> modifiedNotStaged = new java.util.ArrayList<>(modifiedNotStagedSet);
+        java.util.Collections.sort(modifiedNotStaged);
+        for (String s : modifiedNotStaged) {
+            System.out.println(s);
+        }
         System.out.println();
     }
 
@@ -507,7 +540,7 @@ public class Repository {
                 } else {
                     if (shaC == null && shaT != null) {
                         willOverwrite = true;
-                    } else if (!java.util.Objects.equals(shaC, shaT) && shaC != null) {
+                    } else if (shaC != null && shaT != null && !shaC.equals(shaT)) {
                         willOverwrite = true;
                     }
                 }
@@ -596,7 +629,7 @@ public class Repository {
                 if (shaC == null && shaT != null) {
                     checkoutFileFromCommit(targetCommit, file);
                     stageAddition(file, shaT);
-                } else if (!java.util.Objects.equals(shaC, shaT) && shaC != null) {
+                } else if (shaC != null && shaT != null && !shaC.equals(shaT)) {
                     handleConflict(file, shaC, shaT);
                     hasConflict = true;
                 }
@@ -959,7 +992,6 @@ public class Repository {
         List<String> allObjectIds = Utils.plainFilenamesIn(OBJECT_DIR);
         if (allObjectIds != null) {
             for (String objId : allObjectIds) {
-                // 如果硬盘里的某个文件名是以这个短 ID 开头的，就返回完整的文件名
                 if (objId.startsWith(shortId)) {
                     return objId;
                 }
