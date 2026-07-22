@@ -1,26 +1,64 @@
 package gitlet;
 
-// TODO: any imports you need here
 
-import java.util.Date; // TODO: You'll likely use this in this class
+import java.io.Serializable;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 
 /** Represents a gitlet commit object.
- *  TODO: It's a good idea to give a description here of what else this Class
- *  does at a high level.
  *
- *  @author TODO
+ *  @author Andy
  */
-public class Commit {
-    /**
-     * TODO: add instance variables here.
-     *
-     * List all instance variables of the Commit class here with a useful
-     * comment above them describing what that variable represents and how that
-     * variable is used. We've provided one example for `message`.
-     */
+public class Commit implements Serializable {
 
     /** The message of this Commit. */
     private String message;
 
-    /* TODO: fill in the rest of this class. */
+    /** The exact time in Date format */
+    private Date timestamp;
+
+    /** Track the parent */
+    private List<String> parents;
+
+    /** Track the files */
+    private HashMap<String, String> trackedFiles;
+
+    /** Standard timestamp */
+    static final SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.ENGLISH);
+
+    public Commit(String message, Date timestamp, List<String> parents, HashMap<String, String> trackedFiles) {
+        this.message = message;
+        this.timestamp = timestamp;
+        this.parents = parents;
+        this.trackedFiles = trackedFiles;
+    }
+
+    public static Commit createInitialCommit() {
+        return new Commit(
+                "initial commit",
+                new Date(0), // 1970-01-01 00:00:00
+                new java.util.ArrayList<>(),
+                new HashMap<>()
+        );
+    }
+
+    public HashMap<String, String> getTrackedFiles() {
+        return trackedFiles;
+    }
+
+    public java.util.List<String> getParents() {
+        return parents;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public java.util.Date getTimestamp() {
+        return timestamp;
+    }
 }
+
