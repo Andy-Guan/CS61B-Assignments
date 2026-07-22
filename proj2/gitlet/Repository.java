@@ -213,6 +213,8 @@ public class Repository {
 
     /** checkout [commit id] -- [filename] */
     public static void checkoutFile(String commitId, String filename) {
+        commitId = getFullCommitId(commitId);
+
         File commitFile = Utils.join(OBJECT_DIR, commitId);
         if (!commitFile.exists()) {
             System.out.println("No commit with that id exists.");
@@ -312,7 +314,9 @@ public class Repository {
         Commit currentCommit = getCurrentCommit();
 
         List<String> cwdFiles = Utils.plainFilenamesIn(CWD);
-        if (cwdFiles == null) cwdFiles = new java.util.ArrayList<>();
+        if (cwdFiles == null) {
+            cwdFiles = new java.util.ArrayList<>();
+        }
 
         printBranches();
         printStagedFiles(currentStage);
@@ -374,7 +378,9 @@ public class Repository {
         HashSet<String> removed = stage.getRemoval();
 
         for (String file : cwdFiles) {
-            if (!added.containsKey(file) && (!tracked.containsKey(file) || removed.contains(file))) {
+            if (!added.containsKey(file)
+                    && (!tracked.containsKey(file)
+                    || removed.contains(file))) {
                 untrackedFiles.add(file);
             }
         }
@@ -456,17 +462,6 @@ public class Repository {
         Commit targetCommit = Utils.readObject(
                 Utils.join(OBJECT_DIR, targetCommitSha1), Commit.class);
 
-        for (String targetFileName : targetCommit.getTrackedFiles().keySet()) {
-            File cwdFile = Utils.join(CWD, targetFileName);
-
-            if (cwdFile.exists()
-                    && !currentCommit.getTrackedFiles().containsKey(targetFileName)) {
-
-                System.out.println("There is an untracked file in the way; "
-                        + "delete it, or add and commit it first.");
-                System.exit(0);
-            }
-        }
 
         Commit splitPoint = getSplitPoint(currentCommitSha1, targetCommitSha1);
         String splitSha1 = Utils.sha1(Utils.serialize(splitPoint));
@@ -491,6 +486,39 @@ public class Repository {
         allFiles.addAll(cFiles.keySet());
         allFiles.addAll(tFiles.keySet());
 
+        for (String file : allFiles) {
+            String shaC = cFiles.get(file);
+            boolean isUntracked = Utils.join(CWD, file).exists()
+                    && (shaC == null || currentStage.getRemoval().contains(file))
+                    && !currentStage.getAddition().containsKey(file);
+
+            if (isUntracked) {
+                String shaSP = spFiles.get(file);
+                String shaT = tFiles.get(file);
+                boolean willOverwrite = false;
+
+                if (shaSP != null) {
+                    if (shaSP.equals(shaC) && !shaSP.equals(shaT) && shaT != null) {
+                        willOverwrite = true;
+                    } else if (!java.util.Objects.equals(shaC, shaT)
+                            && !shaSP.equals(shaC) && !shaSP.equals(shaT)) {
+                        willOverwrite = true;
+                    }
+                } else {
+                    if (shaC == null && shaT != null) {
+                        willOverwrite = true;
+                    } else if (!java.util.Objects.equals(shaC, shaT) && shaC != null) {
+                        willOverwrite = true;
+                    }
+                }
+
+                if (willOverwrite) {
+                    System.out.println("There is an untracked file in the way; "
+                            + "delete it, or add and commit it first.");
+                    System.exit(0);
+                }
+            }
+        }
         boolean hasConflict = processMergeFiles(allFiles, spFiles, cFiles, tFiles, targetCommit);
 
         String mergeMessage = "Merged " + branchName + " into " + currentBranchName + ".";
@@ -677,6 +705,7 @@ public class Repository {
 
     /** Reset to the commitID status */
     public static void reset(String commitId) {
+        commitId = getFullCommitId(commitId);
         File targetCommitFile = Utils.join(OBJECT_DIR, commitId);
         if (!targetCommitFile.exists()) {
             System.out.println("No commit with that id exists.");
@@ -916,5 +945,26 @@ public class Repository {
                 pushObjects(parent, stopSha1, remoteObjectsDir);
             }
         }
+    }
+
+    /**
+     * Helper: Convert a short UID to a full 40-character SHA-1 UID.
+     * If the input is already 40 chars, or no match is found, it returns the original input.
+     */
+    private static String getFullCommitId(String shortId) {
+        if (shortId.length() == 40) {
+            return shortId;
+        }
+
+        List<String> allObjectIds = Utils.plainFilenamesIn(OBJECT_DIR);
+        if (allObjectIds != null) {
+            for (String objId : allObjectIds) {
+                // 如果硬盘里的某个文件名是以这个短 ID 开头的，就返回完整的文件名
+                if (objId.startsWith(shortId)) {
+                    return objId;
+                }
+            }
+        }
+        return shortId;
     }
 }
