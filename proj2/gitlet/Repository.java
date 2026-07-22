@@ -42,7 +42,8 @@ public class Repository {
     /** Initialize the repository */
     public static void init() {
         if (GITLET_DIR.exists()) {
-            System.out.println("A Gitlet version-control system already exists in the current directory.");
+            System.out.println("A Gitlet version-control system "
+                    + "already exists in the current directory.");
             System.exit(0);
         }
 
@@ -79,7 +80,7 @@ public class Repository {
     /** Add a file to the stage */
     public static void add(String filename) {
         File addFile = Utils.join(CWD, filename);
-        if (!addFile.exists()){
+        if (!addFile.exists()) {
             System.out.println("File does not exist.");
             System.exit(0);
         }
@@ -358,7 +359,9 @@ public class Repository {
             File f = Utils.join(CWD, file);
             String cwdSha1 = Utils.sha1(Utils.readContents(f));
 
-            if (tracked.containsKey(file) && !cwdSha1.equals(tracked.get(file)) && !added.containsKey(file)) {
+            if (tracked.containsKey(file) &&
+                    !cwdSha1.equals(tracked.get(file)) &&
+                    !added.containsKey(file)) {
                 modifiedNotStaged.add(file + " (modified)");
             }
             else if (added.containsKey(file) && !cwdSha1.equals(added.get(file))) {
@@ -387,7 +390,9 @@ public class Repository {
         List<String> untrackedFiles = new java.util.ArrayList<>();
 
         for (String file : cwdFiles) {
-            if (!added.containsKey(file) && (!tracked.containsKey(file) || removed.contains(file))) {
+            if (!added.containsKey(file) &&
+                    (!tracked.containsKey(file) ||
+                            removed.contains(file))) {
                 untrackedFiles.add(file);
             }
         }
@@ -585,11 +590,11 @@ public class Repository {
             contentT = Utils.readContentsAsString(blobT);
         }
 
-        String conflictContent = "<<<<<<< HEAD\n" +
-                contentC +
-                "=======\n" +
-                contentT +
-                ">>>>>>>\n";
+        String conflictContent = "<<<<<<< HEAD\n"
+                + contentC
+                + "=======\n"
+                + contentT
+                + ">>>>>>>\n";
 
         File cwdFile = Utils.join(CWD, file);
         Utils.writeContents(cwdFile, conflictContent);
@@ -614,7 +619,9 @@ public class Repository {
     /** Return the global log */
     public static void globalLog() {
         List<String> allObjectIds = Utils.plainFilenamesIn(OBJECT_DIR);
-        if (allObjectIds == null) return;
+        if (allObjectIds == null) {
+            return;
+        }
 
         for (String objId : allObjectIds) {
             File objFile = Utils.join(OBJECT_DIR, objId);
@@ -692,7 +699,8 @@ public class Repository {
         for (String targetFileName : targetCommit.getTrackedFiles().keySet()) {
             File cwdFile = Utils.join(CWD, targetFileName);
             if (cwdFile.exists() && !currentCommit.getTrackedFiles().containsKey(targetFileName)) {
-                System.out.println("There is an untracked file in the way; delete it, or add and commit it first.");
+                System.out.println("There is an untracked file in the way; " +
+                        "delete it, or add and commit it first.");
                 System.exit(0);
             }
         }
@@ -779,7 +787,7 @@ public class Repository {
         fetchObjects(remoteHeadSha1, remoteObjectsDir);
 
         File localRemoteDir = Utils.join(REFS_REMOTES_DIR, remoteName);
-        localRemoteDir.mkdirs(); // 确保 origin 等目录存在
+        localRemoteDir.mkdirs();
         File localRemoteBranch = Utils.join(localRemoteDir, remoteBranchName);
         Utils.writeContents(localRemoteBranch, remoteHeadSha1);
     }
@@ -814,13 +822,14 @@ public class Repository {
         }
     }
 
+    /** Pull from remote */
     public static void pull(String remoteName, String remoteBranchName) {
         fetch(remoteName, remoteBranchName);
         String targetBranch = remoteName + "/" + remoteBranchName;
         merge(targetBranch);
     }
 
-
+    /** Push to the remote */
     public static void push(String remoteName, String remoteBranchName) {
         java.util.HashMap<String, String> remotes = getRemotes();
 
