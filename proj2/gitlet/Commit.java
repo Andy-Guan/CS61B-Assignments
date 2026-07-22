@@ -27,9 +27,13 @@ public class Commit implements Serializable {
     private HashMap<String, String> trackedFiles;
 
     /** Standard timestamp */
-    static final SimpleDateFormat dateFormat = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.ENGLISH);
+    static final SimpleDateFormat DATEFORMAT =
+            new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.ENGLISH);
 
-    public Commit(String message, Date timestamp, List<String> parents, HashMap<String, String> trackedFiles) {
+    public Commit(String message,
+                  Date timestamp,
+                  List<String> parents,
+                  HashMap<String, String> trackedFiles) {
         this.message = message;
         this.timestamp = timestamp;
         this.parents = parents;
