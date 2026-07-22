@@ -256,7 +256,8 @@ public class Repository {
         }
 
         String currentHead = Utils.readContentsAsString(HEAD);
-        String currentBranchName = currentHead.replace("refs/heads/", "").replace("refs/remotes/", "");
+        String currentBranchName = currentHead.replace("refs/heads/", "").
+                replace("refs/remotes/", "");
 
         if (branchName.equals(currentBranchName)) {
             System.out.println("No need to checkout the current branch.");
@@ -951,8 +952,9 @@ public class Repository {
             remoteHeadSha1 = Utils.readContentsAsString(remoteBranchFile);
         }
 
-        Commit currentCommit = getCurrentCommit();
-        String localHeadSha1 = Utils.sha1(Utils.serialize(currentCommit));
+        String headPath = Utils.readContentsAsString(HEAD);
+        File currentBranchFile = Utils.join(GITLET_DIR, headPath);
+        String localHeadSha1 = Utils.readContentsAsString(currentBranchFile);
 
         if (!remoteHeadSha1.isEmpty() && !isHistoryContains(localHeadSha1, remoteHeadSha1)) {
             System.out.println("Please pull down remote changes before pushing.");
