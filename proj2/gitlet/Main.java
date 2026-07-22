@@ -1,24 +1,117 @@
 package gitlet;
 
 /** Driver class for Gitlet, a subset of the Git version-control system.
- *  @author TODO
+ *  @author Andy
  */
 public class Main {
 
-    /** Usage: java gitlet.Main ARGS, where ARGS contains
-     *  <COMMAND> <OPERAND1> <OPERAND2> ... 
-     */
     public static void main(String[] args) {
-        // TODO: what if args is empty?
+        if (args.length == 0) {
+            System.out.println("Please enter a command.");
+            System.exit(0);
+        }
+
         String firstArg = args[0];
         switch(firstArg) {
             case "init":
-                // TODO: handle the `init` command
+                validateNumArgs(args, 1);
+                Repository.init();
                 break;
             case "add":
-                // TODO: handle the `add [filename]` command
+                validateNumArgs(args, 2);
+                String filename = args[1];
+                Repository.add(filename);
                 break;
-            // TODO: FILL THE REST IN
+            case "commit":
+                if (args.length == 1) {
+                    System.out.println("Please enter a commit message.");
+                    System.exit(0);
+                }
+                validateNumArgs(args, 2);
+
+                String message = args[1];
+                if (message.trim().isEmpty()) {
+                    System.out.println("Please enter a commit message.");
+                    System.exit(0);
+                }
+                Repository.commit(message);
+                break;
+            case "log":
+                validateNumArgs(args, 1);
+                Repository.log();
+                break;
+            case "rm":
+                validateNumArgs(args, 2);
+                String rmFile = args[1];
+                Repository.rm(rmFile);
+                break;
+            case "checkout":
+                if (args.length == 2) {
+                    String branchName = args[1];
+                    Repository.checkoutBranch(branchName);
+                }
+                else if (args.length == 3) {
+                    if (!args[1].equals("--")) {
+                        System.out.println("Incorrect operands.");
+                        System.exit(0);
+                    }
+                    filename = args[2];
+                    Repository.checkoutFile(filename);
+                }
+                else if (args.length == 4) {
+                    if (!args[2].equals("--")) {
+                        System.out.println("Incorrect operands.");
+                        System.exit(0);
+                    }
+                    String commitId = args[1];
+                    filename = args[3];
+                    Repository.checkoutFile(commitId, filename);
+                }
+                else {
+                    System.out.println("Incorrect operands.");
+                    System.exit(0);
+                }
+                break;
+            case "branch":
+                validateNumArgs(args, 2);
+                String newBranchName = args[1];
+                Repository.branch(newBranchName);
+                break;
+            case "rm-branch":
+                validateNumArgs(args, 2);
+                String branchToRemove = args[1];
+                Repository.rmBranch(branchToRemove);
+                break;
+            case "status":
+                validateNumArgs(args, 1);
+                Repository.status();
+                break;
+            case "global-log":
+                validateNumArgs(args, 1);
+                Repository.globalLog();
+                break;
+            case "find":
+                validateNumArgs(args, 2);
+                String findMessage = args[1];
+                Repository.find(findMessage);
+                break;
+            case "reset":
+                validateNumArgs(args, 2);
+                String resetCommitId = args[1];
+                Repository.reset(resetCommitId);
+                break;
+            default:
+                System.out.println("No command with that name exists.");
+                System.exit(0);
+        }
+    }
+
+
+
+    public static void validateNumArgs(String[] args, int n) {
+        if (args.length != n) {
+            System.out.println("Incorrect operands.");
+            System.exit(0);
         }
     }
 }
