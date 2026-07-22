@@ -34,6 +34,10 @@ public class Repository {
     public static final File HEAD = join(GITLET_DIR, "HEAD");
     /** Serialized Stage */
     public static final File STAGECONTROLLER = join(GITLET_DIR, "stageController");
+    /** Remote Repository */
+    public static final File REMOTES = Utils.join(GITLET_DIR, "remotes");
+    /** Remote branches */
+    public static final File REFS_REMOTES_DIR = Utils.join(GITLET_DIR, "refs", "remotes");
 
     /** Initialize the repository */
     public static void init() {
@@ -160,7 +164,7 @@ public class Repository {
                 String p2 = parents.get(1).substring(0, 7);
                 System.out.println("Merge: " + p1 + " " + p2);
             }
-            System.out.println("Date: " + Commit.dateFormat.format(currentCommit.getTimestamp()));
+            System.out.println("Date: " + Commit.DATEFORMAT.format(currentCommit.getTimestamp()));
             System.out.println(currentCommit.getMessage());
             System.out.println();
 
@@ -469,6 +473,18 @@ public class Repository {
         }
 
         Commit splitPoint = getSplitPoint(currentCommitSha1, targetCommitSha1);
+        String splitSha1 = Utils.sha1(Utils.serialize(splitPoint));
+
+        if (splitSha1.equals(targetCommitSha1)) {
+            System.out.println("Given branch is an ancestor of the current branch.");
+            System.exit(0);
+        }
+
+        if (splitSha1.equals(currentCommitSha1)) {
+            checkoutBranch(branchName);
+            System.out.println("Current branch fast-forwarded.");
+            System.exit(0);
+        }
 
         HashMap<String, String> spFiles = splitPoint.getTrackedFiles();
         HashMap<String, String> cFiles = currentCommit.getTrackedFiles();
@@ -479,38 +495,8 @@ public class Repository {
         allFiles.addAll(cFiles.keySet());
         allFiles.addAll(tFiles.keySet());
 
-        boolean hasConflict = false; //conflict
+        boolean hasConflict = processMergeFiles(allFiles, spFiles, cFiles, tFiles, targetCommit);
 
-        for (String file : allFiles) {
-            String shaSP = spFiles.get(file);
-            String shaC = cFiles.get(file);
-            String shaT = tFiles.get(file);
-
-            if (shaSP != null) {
-                if (shaSP.equals(shaC) && !shaSP.equals(shaT) && shaT != null) {
-                    checkoutFileFromCommit(targetCommit, file);
-                    stageAddition(file, shaT);
-                } else if (shaSP.equals(shaT) && !shaSP.equals(shaC) && shaC != null) {
-                } else if (shaSP.equals(shaC) && shaT == null) {
-                    rm(file);
-                } else if (shaSP.equals(shaT) && shaC == null) {
-                } else if (!java.util.Objects.equals(shaC, shaT)) {
-                    handleConflict(file, shaC, shaT);
-                    hasConflict = true;
-                }
-            }
-            else {
-                if (shaC == null && shaT != null) {
-                    checkoutFileFromCommit(targetCommit, file);
-                    stageAddition(file, shaT);
-                } else if (shaC != null && shaT == null) {
-                } else if (!shaC.equals(shaT)) {
-                    handleConflict(file, shaC, shaT);
-                    hasConflict = true;
-                }
-            }
-        }
-        System.out.println("Split point found! Ready to apply merge rules.");
         String mergeMessage = "Merged " + branchName + " into " + currentBranchName + ".";
 
 
@@ -543,6 +529,46 @@ public class Repository {
         Utils.writeContents(branchFile, newCommitSha1);
 
         Utils.writeObject(STAGECONTROLLER, new Stage());
+    }
+
+    /** Handle Merge files */
+    private static boolean processMergeFiles(java.util.HashSet<String> allFiles,
+                                             HashMap<String, String> spFiles,
+                                             HashMap<String, String> cFiles,
+                                             HashMap<String, String> tFiles,
+                                             Commit targetCommit) {
+        boolean hasConflict = false;
+
+        for (String file : allFiles) {
+            String shaSP = spFiles.get(file);
+            String shaC = cFiles.get(file);
+            String shaT = tFiles.get(file);
+
+            if (shaSP != null) {
+                if (shaSP.equals(shaC) && !shaSP.equals(shaT) && shaT != null) {
+                    checkoutFileFromCommit(targetCommit, file);
+                    stageAddition(file, shaT);
+                } else if (shaSP.equals(shaT) && !shaSP.equals(shaC) && shaC != null) {
+                } else if (shaSP.equals(shaC) && shaT == null) {
+                    rm(file);
+                } else if (shaSP.equals(shaT) && shaC == null) {
+                } else if (!java.util.Objects.equals(shaC, shaT)) {
+                    handleConflict(file, shaC, shaT);
+                    hasConflict = true;
+                }
+            }
+            else {
+                if (shaC == null && shaT != null) {
+                    checkoutFileFromCommit(targetCommit, file);
+                    stageAddition(file, shaT);
+                } else if (shaC != null && shaT == null) {
+                } else if (!shaC.equals(shaT)) {
+                    handleConflict(file, shaC, shaT);
+                    hasConflict = true;
+                }
+            }
+        }
+        return hasConflict;
     }
 
     /** handle the conflict for merge */
@@ -606,7 +632,7 @@ public class Repository {
                     System.out.println("Merge: " + p1 + " " + p2);
                 }
 
-                System.out.println("Date: " + Commit.dateFormat.format(commit.getTimestamp()));
+                System.out.println("Date: " + Commit.DATEFORMAT.format(commit.getTimestamp()));
                 System.out.println(commit.getMessage());
                 System.out.println();
 
@@ -688,5 +714,195 @@ public class Repository {
         }
 
         Utils.writeObject(STAGECONTROLLER, new Stage());
+    }
+
+    /** Read the remote repository */
+    private static java.util.HashMap<String, String> getRemotes() {
+        if (!REMOTES.exists()) {
+            return new java.util.HashMap<>();
+        }
+        return Utils.readObject(REMOTES, java.util.HashMap.class);
+    }
+
+    /** Add remote information */
+    public static void addRemote(String remoteName, String remoteDir) {
+        java.util.HashMap<String, String> remotes = getRemotes();
+
+        if (remotes.containsKey(remoteName)) {
+            System.out.println("A remote with that name already exists.");
+            System.exit(0);
+        }
+
+        String normalizedDir = remoteDir.replace("/", java.io.File.separator);
+
+        remotes.put(remoteName, normalizedDir);
+        Utils.writeObject(REMOTES, remotes);
+    }
+
+    /** Remove a remote */
+    public static void rmRemote(String remoteName) {
+        java.util.HashMap<String, String> remotes = getRemotes();
+
+        if (!remotes.containsKey(remoteName)) {
+            System.out.println("A remote with that name does not exist.");
+            System.exit(0);
+        }
+
+        remotes.remove(remoteName);
+        Utils.writeObject(REMOTES, remotes);
+    }
+
+    /** Fetch from the remote */
+    public static void fetch(String remoteName, String remoteBranchName) {
+        java.util.HashMap<String, String> remotes = getRemotes();
+
+        if (!remotes.containsKey(remoteName)) {
+            System.out.println("Remote directory not found.");
+            System.exit(0);
+        }
+
+        File remoteGitletDir = new File(remotes.get(remoteName));
+        if (!remoteGitletDir.exists()) {
+            System.out.println("Remote directory not found.");
+            System.exit(0);
+        }
+
+        File remoteBranchFile = Utils.join(remoteGitletDir, "refs", "heads", remoteBranchName);
+        if (!remoteBranchFile.exists()) {
+            System.out.println("That remote does not have that branch.");
+            System.exit(0);
+        }
+
+        String remoteHeadSha1 = Utils.readContentsAsString(remoteBranchFile);
+        File remoteObjectsDir = Utils.join(remoteGitletDir, "objects");
+
+        fetchObjects(remoteHeadSha1, remoteObjectsDir);
+
+        File localRemoteDir = Utils.join(REFS_REMOTES_DIR, remoteName);
+        localRemoteDir.mkdirs(); // 确保 origin 等目录存在
+        File localRemoteBranch = Utils.join(localRemoteDir, remoteBranchName);
+        Utils.writeContents(localRemoteBranch, remoteHeadSha1);
+    }
+
+    /** Helper for fetch */
+    private static void fetchObjects(String commitSha1, File remoteObjectsDir) {
+        File localCommitFile = Utils.join(OBJECT_DIR, commitSha1);
+        if (localCommitFile.exists()) {
+            return;
+        }
+
+        File remoteCommitFile = Utils.join(remoteObjectsDir, commitSha1);
+        byte[] commitData = Utils.readContents(remoteCommitFile);
+        Utils.writeContents(localCommitFile, commitData);
+
+        Commit commit = Utils.readObject(localCommitFile, Commit.class);
+
+        for (String blobSha1 : commit.getTrackedFiles().values()) {
+            File localBlobFile = Utils.join(OBJECT_DIR, blobSha1);
+            if (!localBlobFile.exists()) {
+                File remoteBlobFile = Utils.join(remoteObjectsDir, blobSha1);
+                byte[] blobData = Utils.readContents(remoteBlobFile);
+                Utils.writeContents(localBlobFile, blobData);
+            }
+        }
+
+        List<String> parents = commit.getParents();
+        if (parents != null) {
+            for (String parentSha1 : parents) {
+                fetchObjects(parentSha1, remoteObjectsDir);
+            }
+        }
+    }
+
+    public static void pull(String remoteName, String remoteBranchName) {
+        fetch(remoteName, remoteBranchName);
+        String targetBranch = remoteName + "/" + remoteBranchName;
+        merge(targetBranch);
+    }
+
+
+    public static void push(String remoteName, String remoteBranchName) {
+        java.util.HashMap<String, String> remotes = getRemotes();
+
+        if (!remotes.containsKey(remoteName)) {
+            System.out.println("Remote directory not found.");
+            System.exit(0);
+        }
+        File remoteGitletDir = new File(remotes.get(remoteName));
+        if (!remoteGitletDir.exists()) {
+            System.out.println("Remote directory not found.");
+            System.exit(0);
+        }
+
+        File remoteBranchFile = Utils.join(remoteGitletDir, "refs", "heads", remoteBranchName);
+        String remoteHeadSha1 = "";
+        if (remoteBranchFile.exists()) {
+            remoteHeadSha1 = Utils.readContentsAsString(remoteBranchFile);
+        }
+
+        Commit currentCommit = getCurrentCommit();
+        String localHeadSha1 = Utils.sha1(Utils.serialize(currentCommit));
+
+        if (!remoteHeadSha1.isEmpty() && !isHistoryContains(localHeadSha1, remoteHeadSha1)) {
+            System.out.println("Please pull down to catch up with remote.");
+            System.exit(0);
+        }
+
+        File remoteObjectsDir = Utils.join(remoteGitletDir, "objects");
+        pushObjects(localHeadSha1, remoteHeadSha1, remoteObjectsDir);
+
+        Utils.writeContents(remoteBranchFile, localHeadSha1);
+    }
+
+    /** Check history */
+    private static boolean isHistoryContains(String currentSha1, String targetSha1) {
+        if (currentSha1.equals(targetSha1)) {
+            return true;
+        }
+
+        File commitFile = Utils.join(OBJECT_DIR, currentSha1);
+        if (!commitFile.exists()) return false;
+
+        Commit commit = Utils.readObject(commitFile, Commit.class);
+        List<String> parents = commit.getParents();
+
+        if (parents == null || parents.isEmpty()) {
+            return false;
+        }
+
+        for (String parent : parents) {
+            if (isHistoryContains(parent, targetSha1)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Copy the local object */
+    private static void pushObjects(String currentSha1, String stopSha1, File remoteObjectsDir) {
+        if (currentSha1.equals(stopSha1)) {
+            return;
+        }
+
+        File localCommitFile = Utils.join(OBJECT_DIR, currentSha1);
+        Commit commit = Utils.readObject(localCommitFile, Commit.class);
+
+        File remoteCommitFile = Utils.join(remoteObjectsDir, currentSha1);
+        Utils.writeContents(remoteCommitFile, Utils.readContents(localCommitFile));
+
+        for (String blobSha1 : commit.getTrackedFiles().values()) {
+            File localBlobFile = Utils.join(OBJECT_DIR, blobSha1);
+            File remoteBlobFile = Utils.join(remoteObjectsDir, blobSha1);
+            if (localBlobFile.exists() && !remoteBlobFile.exists()) {
+                Utils.writeContents(remoteBlobFile, Utils.readContents(localBlobFile));
+            }
+        }
+
+        List<String> parents = commit.getParents();
+        if (parents != null) {
+            for (String parent : parents) {
+                pushObjects(parent, stopSha1, remoteObjectsDir);
+            }
+        }
     }
 }
