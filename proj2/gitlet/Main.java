@@ -12,7 +12,6 @@ public class Main {
         }
 
         String firstArg = args[0];
-
         if (!firstArg.equals("init") && !Repository.GITLET_DIR.exists()) {
             System.out.println("Not in an initialized Gitlet directory.");
             System.exit(0);
@@ -34,7 +33,6 @@ public class Main {
                     System.exit(0);
                 }
                 validateNumArgs(args, 2);
-
                 String message = args[1];
                 if (message.trim().isEmpty()) {
                     System.out.println("Please enter a commit message.");
@@ -117,7 +115,6 @@ public class Main {
                 }
                 Repository.addRemote(args[1], args[2]);
                 break;
-
             case "rm-remote":
                 if (args.length != 2) {
                     System.out.println("Incorrect operands.");
@@ -125,7 +122,6 @@ public class Main {
                 }
                 Repository.rmRemote(args[1]);
                 break;
-
             case "fetch":
                 if (args.length != 3) {
                     System.out.println("Incorrect operands.");
@@ -133,7 +129,6 @@ public class Main {
                 }
                 Repository.fetch(args[1], args[2]);
                 break;
-
             case "push":
                 if (args.length != 3) {
                     System.out.println("Incorrect operands.");
@@ -141,7 +136,6 @@ public class Main {
                 }
                 Repository.push(args[1], args[2]);
                 break;
-
             case "pull":
                 if (args.length != 3) {
                     System.out.println("Incorrect operands.");

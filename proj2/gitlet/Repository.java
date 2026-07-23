@@ -202,6 +202,7 @@ public class Repository {
                 Utils.restrictedDelete(fileInCWD);
             }
         }
+
         Utils.writeObject(STAGECONTROLLER, currentStage);
     }
 
@@ -240,7 +241,7 @@ public class Repository {
         Utils.writeContents(targetFile, content);
     }
 
-    /** checkout to a specific branch */
+    /** Checkout to a specific branch */
     public static void checkoutBranch(String branchName) {
         File targetBranchFile = Utils.join(REFS_HEADS_DIR, branchName);
         String headContent = "refs/heads/" + branchName;
@@ -486,6 +487,7 @@ public class Repository {
         return null; //init
     }
 
+    /** Merge two branches */
     public static void merge(String branchName) {
         Stage currentStage = Utils.readObject(STAGECONTROLLER, Stage.class);
         if (!currentStage.getAddition().isEmpty() || !currentStage.getRemoval().isEmpty()) {
@@ -598,6 +600,7 @@ public class Repository {
             }
         }
     }
+
     /** Generate merge commit */
     private static void finalizeMergeCommit(String branchName, String currentBranchName,
                                             String p1, String p2,
@@ -671,7 +674,7 @@ public class Repository {
         return hasConflict;
     }
 
-    /** handle the conflict for merge */
+    /** Handle the conflict for merge */
     private static void handleConflict(String file, String shaC, String shaT) {
         String contentC = "";
         if (shaC != null) {
@@ -1021,10 +1024,7 @@ public class Repository {
         }
     }
 
-    /**
-     * Helper: Convert a short UID to a full 40-character SHA-1 UID.
-     * If the input is already 40 chars, or no match is found, it returns the original input.
-     */
+    /** Helper for converting a short UID to a full 40-character SHA-1 UID. */
     private static String getFullCommitId(String shortId) {
         if (shortId.length() == 40) {
             return shortId;
