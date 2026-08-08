@@ -100,12 +100,14 @@ public class Engine {
 
         TETile[][] initialDisplay = lightsOn ? worldFrame : applyLineOfSight(worldFrame);
         ter.renderFrame(initialDisplay);
+        drawScoreOnMap();
 
         while (true) {
             TETile[][] displayWorld = lightsOn ? worldFrame : applyLineOfSight(worldFrame);
 
             ter.renderFrame(displayWorld);
-            drawHUD(displayWorld);
+            drawScoreOnMap();
+            StdDraw.show();
             StdDraw.pause(15);
 
             if (StdDraw.hasNextKeyTyped()) {
@@ -384,6 +386,9 @@ public class Engine {
      * Draw the initial menu
      */
     private void drawMenu() {
+        StdDraw.setXscale(0, WIDTH);
+        StdDraw.setYscale(0, HEIGHT);
+
         StdDraw.clear(Color.BLACK);
         StdDraw.setPenColor(Color.WHITE);
 
@@ -396,6 +401,10 @@ public class Engine {
         StdDraw.text(WIDTH / 2.0, HEIGHT * 0.5, "New Game (N)");
         StdDraw.text(WIDTH / 2.0, HEIGHT * 0.4, "Load Game (L)");
         StdDraw.text(WIDTH / 2.0, HEIGHT * 0.3, "Quit (Q)");
+
+        Font smallFont = new Font("Monaco", Font.PLAIN, 16);
+        StdDraw.setFont(smallFont);
+        StdDraw.textRight(WIDTH - 1, HEIGHT - 0.5, "Score: " + score);
 
         StdDraw.show();
     }
@@ -477,32 +486,6 @@ public class Engine {
         }
     }
 
-    /**
-     * Draw the hud according to the mouse
-     */
-    private void drawHUD(TETile[][] world) {
-        int mouseX = (int) StdDraw.mouseX();
-        int mouseY = (int) StdDraw.mouseY();
-
-        String tileName = "";
-
-        if (mouseX >= 0 && mouseX < WIDTH && mouseY >= 0 && mouseY < HEIGHT) {
-            tileName = world[mouseX][mouseY].description();
-        }
-
-        StdDraw.setPenColor(Color.BLACK);
-        StdDraw.filledRectangle(WIDTH / 2.0, HEIGHT + 1, WIDTH / 2.0, 1);
-
-        StdDraw.setPenColor(Color.WHITE);
-        Font smallFont = new Font("Monaco", Font.PLAIN, 16);
-        StdDraw.setFont(smallFont);
-
-        StdDraw.textLeft(1, HEIGHT + 0.5, tileName);
-
-        StdDraw.textRight(WIDTH - 1, HEIGHT + 0.5, "Score: " + score);
-
-        StdDraw.show();
-    }
 
     /**
      * Generate the world with limited sight
@@ -545,5 +528,14 @@ public class Engine {
                 world[rx][ry] = Tileset.CHEST_CLOSED;
             }
         }
+    }
+    private void drawScoreOnMap() {
+        String scoreText = "Score: " + score;
+        StdDraw.setPenColor(new Color(0, 0, 0, 180));
+        StdDraw.filledRectangle(WIDTH - 6, HEIGHT - 1, 6, 0.7);
+        StdDraw.setPenColor(Color.WHITE);
+        Font scoreFont = new Font("Monaco", Font.BOLD, 16);
+        StdDraw.setFont(scoreFont);
+        StdDraw.textRight(WIDTH - 0.5, HEIGHT - 1, scoreText);
     }
 }
