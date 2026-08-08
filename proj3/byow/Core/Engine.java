@@ -33,16 +33,24 @@ public class Engine {
         int nextX = playerX;
         int nextY = playerY;
 
-        if (c == 'w') nextY += 1;
-        else if (c == 's') nextY -= 1;
-        else if (c == 'a') nextX -= 1;
-        else if (c == 'd') nextX += 1;
+        if (c == 'w') {
+            nextY += 1;
+        }
+        else if (c == 's') {
+            nextY -= 1;
+        }
+        else if (c == 'a') {
+            nextX -= 1;
+        }
+        else if (c == 'd') {
+            nextX += 1;
+        }
         else return false;
 
         TETile nextTile = world[nextX][nextY];
 
-        if (nextTile.character() == Tileset.FLOOR.character() ||
-                nextTile.character() == Tileset.CHEST_OPENED.character()) {
+        if (nextTile.character() == Tileset.FLOOR.character()
+                || nextTile.character() == Tileset.CHEST_OPENED.character()) {
 
             world[playerX][playerY] = Tileset.FLOOR;
             playerX = nextX;
@@ -231,8 +239,8 @@ public class Engine {
 
             if (!overlap) {
                 rooms.add(newRoom);
-                for (int cx = newRoom.x; cx < newRoom.x + newRoom.width; cx++) {
-                    for (int cy = newRoom.y; cy < newRoom.y + newRoom.height; cy++) {
+                for (int cx = newRoom.getX(); cx < newRoom.getX() + newRoom.getWidth(); cx++) {
+                    for (int cy = newRoom.getY(); cy < newRoom.getY() + newRoom.getHeight(); cy++) {
                         world[cx][cy] = Tileset.FLOOR;
                     }
                 }
@@ -506,8 +514,8 @@ public class Engine {
             int roomIndex = random.nextInt(rooms.size() - 1) + 1;
             Room room = rooms.get(roomIndex);
 
-            int rx = random.nextInt(room.width) + room.x;
-            int ry = random.nextInt(room.height) + room.y;
+            int rx = random.nextInt(room.getWidth()) + room.getX();
+            int ry = random.nextInt(room.getHeight()) + room.getY();
 
             if (world[rx][ry].character() == Tileset.FLOOR.character()) {
                 world[rx][ry] = Tileset.CHEST_CLOSED;
