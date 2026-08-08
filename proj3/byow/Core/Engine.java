@@ -70,7 +70,7 @@ public class Engine {
             return newWorld;
         } else if (nextTile == Tileset.UNLOCKED_DOOR) {
             world[playerX][playerY] = Tileset.FLOOR;
-            if(nextX == X1){
+            if(nextX == X1 && nextY == Y1){
                 playerX = X2 + nextX - playerX;
                 playerY = Y2 + nextY - playerY;
             } else {
