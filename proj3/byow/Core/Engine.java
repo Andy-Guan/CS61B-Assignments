@@ -20,6 +20,12 @@ public class Engine {
     private int playerY;
     private long currentSeed;
 
+    //Position for portals
+    private int X1;
+    private int Y1;
+    private int X2;
+    private int Y2;
+
     private int score = 0;
 
     /**
@@ -27,7 +33,7 @@ public class Engine {
      * @param c moving instruction (w/a/s/d)
      * @param world
      */
-    private boolean processMovement(char c, TETile[][] world) {
+    private TETile[][] processMovement(char c, TETile[][] world) {
         c = Character.toLowerCase(c);
         int nextX = playerX;
         int nextY = playerY;
@@ -37,11 +43,11 @@ public class Engine {
             case 's': nextY--; break;
             case 'a': nextX--; break;
             case 'd': nextX++; break;
-            default: return false;
+            default: return null;
         }
 
         if (nextX < 0 || nextX >= WIDTH || nextY < 0 || nextY >= HEIGHT) {
-            return false;
+            return null;
         }
 
         TETile nextTile = world[nextX][nextY];
@@ -51,14 +57,31 @@ public class Engine {
             playerX = nextX;
             playerY = nextY;
             world[playerX][playerY] = Tileset.AVATAR;
-            return true;
+            return world;
         } else if (nextTile == Tileset.CHEST_CLOSED) {
             world[nextX][nextY] = Tileset.CHEST_OPENED;
             score += 100;
-            return true;
+            return world;
+        } else if (nextTile == Tileset.LOCKED_DOOR) {
+            currentSeed += 10;
+            int savedScore = score;
+            TETile[][] newWorld = interactWithInputString("N" + currentSeed + "S");
+            score = savedScore;
+            return newWorld;
+        } else if (nextTile == Tileset.UNLOCKED_DOOR) {
+            world[playerX][playerY] = Tileset.FLOOR;
+            if(nextX == X1){
+                playerX = X2 + nextX - playerX;
+                playerY = Y2 + nextY - playerY;
+            } else {
+                playerX = X1 + nextX - playerX;
+                playerY = Y1 + nextY - playerY;
+            }
+            world[playerX][playerY] = Tileset.AVATAR;
+            return world;
         }
 
-        return false;
+        return null;
     }
 
     /**
@@ -133,7 +156,10 @@ public class Engine {
                 }
 
                 moveHistory += c;
-                processMovement(c, worldFrame);
+                TETile[][] newWorld = processMovement(c, worldFrame);
+                if (newWorld != null) {
+                    worldFrame = newWorld;
+                }
             }
         }
 
@@ -166,6 +192,7 @@ public class Engine {
         if (input == null || input.isEmpty()) {
             return new TETile[WIDTH][HEIGHT];
         }
+        this.score = 0;
         String upperInput = input.toUpperCase();
         char firstChar = upperInput.charAt(0);
 
@@ -210,8 +237,9 @@ public class Engine {
         generateWalls(finalWorldFrame);
         spawnPlayer(finalWorldFrame, rooms);
         spawnChests(finalWorldFrame, rooms, random, 5);
-
-        this.score = 0;
+        colorBackground(finalWorldFrame);
+        spawnStairs(finalWorldFrame, rooms);
+        spawnPortals(finalWorldFrame, rooms);
 
         boolean colonPressed = false;
         for (int i = endIndex + 1; i < upperCommand.length(); i++) {
@@ -227,11 +255,15 @@ public class Engine {
             } else {
                 colonPressed = false;
             }
-            processMovement(c, finalWorldFrame);
+            TETile[][] nextWorld = processMovement(c, finalWorldFrame);
+            if (nextWorld != null) {
+                finalWorldFrame = nextWorld;
+            }
         }
 
         return finalWorldFrame;
     }
+
     /**
      * Generate rooms randomly
      * @param world
@@ -537,5 +569,65 @@ public class Engine {
         Font scoreFont = new Font("Monaco", Font.BOLD, 16);
         StdDraw.setFont(scoreFont);
         StdDraw.textRight(WIDTH - 0.5, HEIGHT - 1, scoreText);
+    }
+
+    private void colorBackground(TETile[][] WorldFrame) {
+        for(int x = 0; x < WIDTH; x++ ) {
+            for(int y = 0; y < HEIGHT; y++ ) {
+                if(WorldFrame[x][y] == Tileset.NOTHING){
+                    String biome = getBiome(x, y);
+                    switch (biome) {
+                        case "mountain" : WorldFrame[x][y] = Tileset.MOUNTAIN; break;
+                        case "flower" : WorldFrame[x][y] = Tileset.FLOWER; break;
+                        case "water" : WorldFrame[x][y] = Tileset.WATER; break;
+                        default: return ;
+                    }
+
+                }
+            }
+        }
+    }
+
+    private String getBiome(int x, int y){
+        if(x < 0.15 * WIDTH || x > 0.85 * WIDTH){
+            return "mountain";
+        } else if(y < 0.15 * HEIGHT || y > 0.85 * HEIGHT){
+            return "mountain";
+        }
+        if(x < 0.35 * WIDTH || x > 0.65 * WIDTH){
+            return "flower";
+        } else if(y < 0.35 * HEIGHT || y > 0.65 * HEIGHT){
+            return "flower";
+        }
+        return "water";
+    }
+
+    private void spawnStairs(TETile[][] world, java.util.List<Room> rooms) {
+        if (rooms.size() < 2) {
+            return ;
+        }
+        Room stairRoom = rooms.get(rooms.size() - 1);
+        int X = stairRoom.getCenterX();
+        int Y = stairRoom.getCenterY();
+
+        world[X][Y] = Tileset.LOCKED_DOOR;
+    }
+
+    private void spawnPortals(TETile[][] world,java.util.List<Room> rooms){
+        if (rooms.size() < 2) {
+            return ;
+        }
+        Room stairRoom1 = rooms.get(rooms.size() - 2);
+        Room stairRoom2 = rooms.get(1);
+
+        X1 = stairRoom1.getCenterX();
+        Y1 = stairRoom1.getCenterY();
+
+        world[X1][Y1] = Tileset.UNLOCKED_DOOR;
+
+        X2 = stairRoom2.getCenterX();
+        Y2 = stairRoom2.getCenterY();
+
+        world[X2][Y2] = Tileset.UNLOCKED_DOOR;
     }
 }
