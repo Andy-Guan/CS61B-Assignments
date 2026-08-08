@@ -33,32 +33,27 @@ public class Engine {
         int nextX = playerX;
         int nextY = playerY;
 
-        if (c == 'w') {
-            nextY += 1;
+        switch (c) {
+            case 'w': nextY++; break;
+            case 's': nextY--; break;
+            case 'a': nextX--; break;
+            case 'd': nextX++; break;
+            default: return false;
         }
-        else if (c == 's') {
-            nextY -= 1;
+
+        if (nextX < 0 || nextX >= WIDTH || nextY < 0 || nextY >= HEIGHT) {
+            return false;
         }
-        else if (c == 'a') {
-            nextX -= 1;
-        }
-        else if (c == 'd') {
-            nextX += 1;
-        }
-        else return false;
 
         TETile nextTile = world[nextX][nextY];
 
-        if (nextTile.character() == Tileset.FLOOR.character()
-                || nextTile.character() == Tileset.CHEST_OPENED.character()) {
-
+        if (nextTile == Tileset.FLOOR) {
             world[playerX][playerY] = Tileset.FLOOR;
             playerX = nextX;
             playerY = nextY;
             world[playerX][playerY] = Tileset.AVATAR;
             return true;
-        }
-        else if (nextTile.character() == Tileset.CHEST_CLOSED.character()) {
+        } else if (nextTile == Tileset.CHEST_CLOSED) {
             world[nextX][nextY] = Tileset.CHEST_OPENED;
             score += 100;
             return true;
@@ -66,6 +61,7 @@ public class Engine {
 
         return false;
     }
+
     /**
      * Method used for exploring a fresh world. This method should handle all inputs,
      * including inputs from the main menu.
@@ -104,16 +100,19 @@ public class Engine {
         boolean colonPressed = false;
         boolean lightsOn = false;
 
-        ter.renderFrame(worldFrame);
+        TETile[][] initialDisplay = lightsOn ? worldFrame : applyLineOfSight(worldFrame);
+        ter.renderFrame(initialDisplay);
 
         while (true) {
             TETile[][] displayWorld = lightsOn ? worldFrame : applyLineOfSight(worldFrame);
+
+            ter.renderFrame(displayWorld);
             drawHUD(displayWorld);
             StdDraw.pause(15);
 
             if (StdDraw.hasNextKeyTyped()) {
                 char c = Character.toLowerCase(StdDraw.nextKeyTyped());
-                moveHistory += c;
+
 
                 if (colonPressed && c == 'q') {
                     saveGameHistory(moveHistory);
@@ -122,20 +121,19 @@ public class Engine {
                 if (c == ':') {
                     colonPressed = true;
                     continue;
-                } else {
+                }
+                if (colonPressed) {
                     colonPressed = false;
+                    continue;
                 }
 
                 if (c == 'v') {
                     lightsOn = !lightsOn;
-                    ter.renderFrame(lightsOn ? worldFrame : applyLineOfSight(worldFrame));
                     continue;
                 }
 
-                boolean stateChanged = processMovement(c, worldFrame);
-                if (stateChanged) {
-                    ter.renderFrame(lightsOn ? worldFrame : applyLineOfSight(worldFrame));
-                }
+                moveHistory += c;
+                processMovement(c, worldFrame);
             }
         }
 
@@ -165,18 +163,42 @@ public class Engine {
      * @return the 2D TETile[][] representing the state of the world
      */
     public TETile[][] interactWithInputString(String input) {
+        if (input == null || input.isEmpty()) {
+            return new TETile[WIDTH][HEIGHT];
+        }
         String upperInput = input.toUpperCase();
+        char firstChar = upperInput.charAt(0);
 
-        int startIndex = upperInput.indexOf('N') + 1;
-        int endIndex = upperInput.indexOf('S');
-        String seedString = upperInput.substring(startIndex, endIndex);
+        if (firstChar == 'N') {
+            return runGameFromSeed(upperInput);
+        } else if (firstChar == 'L') {
+            String savedHistory = loadGameHistory().toUpperCase().replace(":Q", "");
+            String restMoves = upperInput.substring(1);
+            String fullCommand = savedHistory + restMoves;
 
+            if (fullCommand.isEmpty() || fullCommand.charAt(0) != 'N') {
+                return new TETile[WIDTH][HEIGHT];
+            }
+            return runGameFromSeed(fullCommand);
+        } else {
+            return new TETile[WIDTH][HEIGHT];
+        }
+    }
+
+    private TETile[][] runGameFromSeed(String upperCommand) {
+        int startIndex = upperCommand.indexOf('N') + 1;
+        int endIndex = upperCommand.indexOf('S');
+
+        if (startIndex < 0 || endIndex < 0 || startIndex >= endIndex) {
+            return new TETile[WIDTH][HEIGHT];
+        }
+
+        String seedString = upperCommand.substring(startIndex, endIndex);
         long seed = Long.parseLong(seedString);
         this.currentSeed = seed;
         Random random = new Random(seed);
 
         TETile[][] finalWorldFrame = new TETile[WIDTH][HEIGHT];
-
         for (int x = 0; x < WIDTH; x++) {
             for (int y = 0; y < HEIGHT; y++) {
                 finalWorldFrame[x][y] = Tileset.NOTHING;
@@ -192,11 +214,11 @@ public class Engine {
         this.score = 0;
 
         boolean colonPressed = false;
-        for (int i = endIndex + 1; i < upperInput.length(); i++) {
-            char c = upperInput.charAt(i);
+        for (int i = endIndex + 1; i < upperCommand.length(); i++) {
+            char c = upperCommand.charAt(i);
 
             if (colonPressed && c == 'Q') {
-                saveGameHistory(upperInput.substring(0, i + 1));
+                saveGameHistory(upperCommand.substring(0, i + 1));
                 break;
             }
             if (c == ':') {
@@ -415,7 +437,8 @@ public class Engine {
         StdDraw.setFont(font);
 
         StdDraw.text(WIDTH / 2.0, HEIGHT * 0.6, "Enter Seed:");
-        StdDraw.text(WIDTH / 2.0, HEIGHT * 0.4, currentSeed + (currentSeed.length() % 2 == 0 ? "_" : ""));
+        StdDraw.text(WIDTH / 2.0, HEIGHT * 0.4,
+                currentSeed + (currentSeed.length() % 2 == 0 ? "_" : ""));
 
         Font smallFont = new Font("Monaco", Font.PLAIN, 15);
         StdDraw.setFont(smallFont);
@@ -444,12 +467,12 @@ public class Engine {
         try {
             File file = new File("savefile.txt");
             if (!file.exists()) {
-                return ""; // no file
+                return "";
             }
             Scanner scanner = new Scanner(file);
-            String history = scanner.hasNext() ? scanner.next() : "";
+            String history = scanner.hasNextLine() ? scanner.nextLine() : "";
             scanner.close();
-            return history;
+            return history.trim();
         } catch (Exception e) {
             e.printStackTrace();
             return "";
@@ -507,8 +530,11 @@ public class Engine {
     /**
      * Place the chest
      */
-    private void spawnChests(TETile[][] world, java.util.List<Room> rooms, Random random, int numChests) {
-        if (rooms.size() <= 1) return;
+    private void spawnChests(TETile[][] world, java.util.List<Room> rooms,
+                             Random random, int numChests) {
+        if (rooms.size() <= 1) {
+            return;
+        }
 
         for (int i = 0; i < numChests; i++) {
             int roomIndex = random.nextInt(rooms.size() - 1) + 1;
