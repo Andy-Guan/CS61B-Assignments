@@ -5,7 +5,12 @@ import byow.TileEngine.TETile;
 import byow.TileEngine.Tileset;
 import edu.princeton.cs.algs4.StdDraw;
 
+import java.awt.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Random;
+import java.util.Scanner;
 
 public class Engine {
     TERenderer ter = new TERenderer();
@@ -14,7 +19,45 @@ public class Engine {
     public static final int HEIGHT = 30;
     private int playerX;
     private int playerY;
+    private long currentSeed;
 
+    private int score = 0;
+
+    /**
+     * Process the movement
+     * @param c moving instruction (w/a/s/d)
+     * @param world
+     */
+    private boolean processMovement(char c, TETile[][] world) {
+        c = Character.toLowerCase(c);
+        int nextX = playerX;
+        int nextY = playerY;
+
+        if (c == 'w') nextY += 1;
+        else if (c == 's') nextY -= 1;
+        else if (c == 'a') nextX -= 1;
+        else if (c == 'd') nextX += 1;
+        else return false;
+
+        TETile nextTile = world[nextX][nextY];
+
+        if (nextTile.character() == Tileset.FLOOR.character() ||
+                nextTile.character() == Tileset.CHEST_OPENED.character()) {
+
+            world[playerX][playerY] = Tileset.FLOOR;
+            playerX = nextX;
+            playerY = nextY;
+            world[playerX][playerY] = Tileset.AVATAR;
+            return true;
+        }
+        else if (nextTile.character() == Tileset.CHEST_CLOSED.character()) {
+            world[nextX][nextY] = Tileset.CHEST_OPENED;
+            score += 100;
+            return true;
+        }
+
+        return false;
+    }
     /**
      * Method used for exploring a fresh world. This method should handle all inputs,
      * including inputs from the main menu.
@@ -23,41 +66,71 @@ public class Engine {
         TERenderer ter = new TERenderer();
         ter.initialize(WIDTH, HEIGHT);
 
-        TETile[][] worldFrame = interactWithInputString("N123456S");
-        ter.renderFrame(worldFrame);
+        drawMenu();
+        TETile[][] worldFrame = null;
+        String moveHistory = "";
 
+        String seedInputStr = "";
         while (true) {
             if (StdDraw.hasNextKeyTyped()) {
-                char c = StdDraw.nextKeyTyped();
-                c = Character.toLowerCase(c);
-
-                int nextX = playerX;
-                int nextY = playerY;
-
-                if (c == 'w') {
-                    nextY += 1;
-                } else if (c == 's') {
-                    nextY -= 1;
-                } else if (c == 'a') {
-                    nextX -= 1;
-                } else if (c == 'd') {
-                    nextX += 1;
+                char c = Character.toLowerCase(StdDraw.nextKeyTyped());
+                if (c == 'n') {
+                    String rawSeed = solicitSeedInput();
+                    seedInputStr = "N" + rawSeed + "S";
+                    worldFrame = interactWithInputString(seedInputStr);
+                    break;
+                } else if (c == 'l') {
+                    moveHistory = loadGameHistory();
+                    if (moveHistory.isEmpty()) {
+                        System.exit(0);
+                    }
+                    moveHistory = moveHistory.replace(":q", "").replace(":Q", "");
+                    worldFrame = interactWithInputString(moveHistory);
+                    break;
                 } else if (c == 'q') {
                     System.exit(0);
                 }
+            }
+        }
 
-                if (worldFrame[nextX][nextY].character() == Tileset.FLOOR.character()) {
-                    worldFrame[playerX][playerY] = Tileset.FLOOR;
+        boolean colonPressed = false;
+        boolean lightsOn = false;
 
-                    playerX = nextX;
-                    playerY = nextY;
+        ter.renderFrame(worldFrame);
 
-                    worldFrame[playerX][playerY] = Tileset.AVATAR;
+        while (true) {
+            TETile[][] displayWorld = lightsOn ? worldFrame : applyLineOfSight(worldFrame);
+            drawHUD(displayWorld);
+            StdDraw.pause(15);
 
-                    ter.renderFrame(worldFrame);
+            if (StdDraw.hasNextKeyTyped()) {
+                char c = Character.toLowerCase(StdDraw.nextKeyTyped());
+                moveHistory += c;
+
+                if (colonPressed && c == 'q') {
+                    saveGameHistory(moveHistory);
+                    System.exit(0);
+                }
+                if (c == ':') {
+                    colonPressed = true;
+                    continue;
+                } else {
+                    colonPressed = false;
+                }
+
+                if (c == 'v') {
+                    lightsOn = !lightsOn;
+                    ter.renderFrame(lightsOn ? worldFrame : applyLineOfSight(worldFrame));
+                    continue;
+                }
+
+                boolean stateChanged = processMovement(c, worldFrame);
+                if (stateChanged) {
+                    ter.renderFrame(lightsOn ? worldFrame : applyLineOfSight(worldFrame));
                 }
             }
         }
+
     }
 
 
@@ -84,10 +157,6 @@ public class Engine {
      * @return the 2D TETile[][] representing the state of the world
      */
     public TETile[][] interactWithInputString(String input) {
-        // passed in as an argument, and return a 2D tile representation of the
-        // world that would have been drawn if the same inputs had been given
-        // to interactWithKeyboard().
-
         String upperInput = input.toUpperCase();
 
         int startIndex = upperInput.indexOf('N') + 1;
@@ -95,6 +164,7 @@ public class Engine {
         String seedString = upperInput.substring(startIndex, endIndex);
 
         long seed = Long.parseLong(seedString);
+        this.currentSeed = seed;
         Random random = new Random(seed);
 
         TETile[][] finalWorldFrame = new TETile[WIDTH][HEIGHT];
@@ -108,10 +178,30 @@ public class Engine {
         java.util.List<Room> rooms = generateRooms(finalWorldFrame, random, 100);
         connectRooms(finalWorldFrame, rooms, random);
         generateWalls(finalWorldFrame);
+        spawnPlayer(finalWorldFrame, rooms);
+        spawnChests(finalWorldFrame, rooms, random, 5);
+
+        this.score = 0;
+
+        boolean colonPressed = false;
+        for (int i = endIndex + 1; i < upperInput.length(); i++) {
+            char c = upperInput.charAt(i);
+
+            if (colonPressed && c == 'Q') {
+                saveGameHistory(upperInput.substring(0, i + 1));
+                break;
+            }
+            if (c == ':') {
+                colonPressed = true;
+                continue;
+            } else {
+                colonPressed = false;
+            }
+            processMovement(c, finalWorldFrame);
+        }
 
         return finalWorldFrame;
     }
-
     /**
      * Generate rooms randomly
      * @param world
@@ -240,13 +330,15 @@ public class Engine {
 
     public static void main(String[] args) {
         Engine engine = new Engine();
+        engine.interactWithKeyboard();
 
+        /**
         TETile[][] testWorld = engine.interactWithInputString("N1456S");
 
         TERenderer ter = new TERenderer();
         ter.initialize(WIDTH, HEIGHT);
 
-        ter.renderFrame(testWorld);
+        ter.renderFrame(testWorld); */
     }
 
     /**
@@ -258,5 +350,168 @@ public class Engine {
         playerY = startRoom.getCenterY();
 
         world[playerX][playerY] = Tileset.AVATAR;
+    }
+
+    /**
+     * Draw the initial menu
+     */
+    private void drawMenu() {
+        StdDraw.clear(Color.BLACK);
+        StdDraw.setPenColor(Color.WHITE);
+
+        Font titleFont = new Font("Monaco", Font.BOLD, 40);
+        StdDraw.setFont(titleFont);
+        StdDraw.text(WIDTH / 2.0, HEIGHT * 0.75, "CS61B: The Game");
+
+        Font menuFont = new Font("Monaco", Font.PLAIN, 20);
+        StdDraw.setFont(menuFont);
+        StdDraw.text(WIDTH / 2.0, HEIGHT * 0.5, "New Game (N)");
+        StdDraw.text(WIDTH / 2.0, HEIGHT * 0.4, "Load Game (L)");
+        StdDraw.text(WIDTH / 2.0, HEIGHT * 0.3, "Quit (Q)");
+
+        StdDraw.show();
+    }
+
+    /**
+     * Get and show the seed on the menu
+     */
+    private String solicitSeedInput() {
+        String seedStr = "";
+
+        drawSeedFrame(seedStr);
+
+        while (true) {
+            if (StdDraw.hasNextKeyTyped()) {
+                char c = StdDraw.nextKeyTyped();
+                c = Character.toLowerCase(c);
+
+                if (c == 's') {
+                    break;
+                } else if (Character.isDigit(c)) {
+                    seedStr += c;
+                    drawSeedFrame(seedStr);
+                }
+            }
+        }
+        return seedStr;
+    }
+
+    /**
+     * Draw the temporary seed
+     */
+    private void drawSeedFrame(String currentSeed) {
+        StdDraw.clear(Color.BLACK);
+        StdDraw.setPenColor(Color.WHITE);
+
+        Font font = new Font("Monaco", Font.BOLD, 30);
+        StdDraw.setFont(font);
+
+        StdDraw.text(WIDTH / 2.0, HEIGHT * 0.6, "Enter Seed:");
+        StdDraw.text(WIDTH / 2.0, HEIGHT * 0.4, currentSeed + (currentSeed.length() % 2 == 0 ? "_" : ""));
+
+        Font smallFont = new Font("Monaco", Font.PLAIN, 15);
+        StdDraw.setFont(smallFont);
+        StdDraw.text(WIDTH / 2.0, HEIGHT * 0.2, "Press 'S' to Start");
+
+        StdDraw.show();
+    }
+
+    /**
+     * Save the game
+     */
+    private void saveGameHistory(String history) {
+        try {
+            FileWriter writer = new FileWriter("savefile.txt");
+            writer.write(history);
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Load the game
+     */
+    private String loadGameHistory() {
+        try {
+            File file = new File("savefile.txt");
+            if (!file.exists()) {
+                return ""; // no file
+            }
+            Scanner scanner = new Scanner(file);
+            String history = scanner.hasNext() ? scanner.next() : "";
+            scanner.close();
+            return history;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    /**
+     * Draw the hud according to the mouse
+     */
+    private void drawHUD(TETile[][] world) {
+        int mouseX = (int) StdDraw.mouseX();
+        int mouseY = (int) StdDraw.mouseY();
+
+        String tileName = "";
+
+        if (mouseX >= 0 && mouseX < WIDTH && mouseY >= 0 && mouseY < HEIGHT) {
+            tileName = world[mouseX][mouseY].description();
+        }
+
+        StdDraw.setPenColor(Color.BLACK);
+        StdDraw.filledRectangle(WIDTH / 2.0, HEIGHT + 1, WIDTH / 2.0, 1);
+
+        StdDraw.setPenColor(Color.WHITE);
+        Font smallFont = new Font("Monaco", Font.PLAIN, 16);
+        StdDraw.setFont(smallFont);
+
+        StdDraw.textLeft(1, HEIGHT + 0.5, tileName);
+
+        StdDraw.textRight(WIDTH - 1, HEIGHT + 0.5, "Score: " + score);
+
+        StdDraw.show();
+    }
+
+    /**
+     * Generate the world with limited sight
+     */
+    private TETile[][] applyLineOfSight(TETile[][] world) {
+        TETile[][] visibleWorld = new TETile[WIDTH][HEIGHT];
+        int visionRadius = 5;
+
+        for (int x = 0; x < WIDTH; x++) {
+            for (int y = 0; y < HEIGHT; y++) {
+                double distance = Math.sqrt(Math.pow(x - playerX, 2) + Math.pow(y - playerY, 2));
+
+                if (distance <= visionRadius) {
+                    visibleWorld[x][y] = world[x][y];
+                } else {
+                    visibleWorld[x][y] = Tileset.NOTHING;
+                }
+            }
+        }
+        return visibleWorld;
+    }
+
+    /**
+     * Place the chest
+     */
+    private void spawnChests(TETile[][] world, java.util.List<Room> rooms, Random random, int numChests) {
+        if (rooms.size() <= 1) return;
+
+        for (int i = 0; i < numChests; i++) {
+            int roomIndex = random.nextInt(rooms.size() - 1) + 1;
+            Room room = rooms.get(roomIndex);
+
+            int rx = random.nextInt(room.width) + room.x;
+            int ry = random.nextInt(room.height) + room.y;
+
+            if (world[rx][ry].character() == Tileset.FLOOR.character()) {
+                world[rx][ry] = Tileset.CHEST_CLOSED;
+            }
+        }
     }
 }

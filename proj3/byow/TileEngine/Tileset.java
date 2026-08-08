@@ -33,6 +33,10 @@ public class Tileset {
     public static final TETile SAND = new TETile('▒', Color.yellow, Color.black, "sand");
     public static final TETile MOUNTAIN = new TETile('▲', Color.gray, Color.black, "mountain");
     public static final TETile TREE = new TETile('♠', Color.green, Color.black, "tree");
+    public static final TETile CHEST_CLOSED = new TETile('!', Color.YELLOW, Color.BLACK, "closed chest");
+    public static final TETile CHEST_OPENED = new TETile('%', Color.LIGHT_GRAY, Color.BLACK, "opened chest");
+
+    // 记录玩家得分
 }
 
 
