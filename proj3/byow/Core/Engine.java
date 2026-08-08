@@ -14,7 +14,6 @@ import java.util.Scanner;
 
 public class Engine {
     TERenderer ter = new TERenderer();
-    /* Feel free to change the width and height. */
     public static final int WIDTH = 80;
     public static final int HEIGHT = 30;
     private int playerX;
@@ -67,7 +66,6 @@ public class Engine {
      * including inputs from the main menu.
      */
     public void interactWithKeyboard() {
-        TERenderer ter = new TERenderer();
         ter.initialize(WIDTH, HEIGHT);
 
         drawMenu();
@@ -429,7 +427,7 @@ public class Engine {
     /**
      * Draw the temporary seed
      */
-    private void drawSeedFrame(String currentSeed) {
+    private void drawSeedFrame(String seed) {
         StdDraw.clear(Color.BLACK);
         StdDraw.setPenColor(Color.WHITE);
 
@@ -438,7 +436,7 @@ public class Engine {
 
         StdDraw.text(WIDTH / 2.0, HEIGHT * 0.6, "Enter Seed:");
         StdDraw.text(WIDTH / 2.0, HEIGHT * 0.4,
-                currentSeed + (currentSeed.length() % 2 == 0 ? "_" : ""));
+                seed + (seed.length() % 2 == 0 ? "_" : ""));
 
         Font smallFont = new Font("Monaco", Font.PLAIN, 15);
         StdDraw.setFont(smallFont);
@@ -473,7 +471,7 @@ public class Engine {
             String history = scanner.hasNextLine() ? scanner.nextLine() : "";
             scanner.close();
             return history.trim();
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
             return "";
         }
