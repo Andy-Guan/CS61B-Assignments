@@ -31,7 +31,7 @@ public class HexWorld {
     private static final int WIDTH = 60;
     private static final int HEIGHT = 60;
 
-    private static final long SEED = 2873125;
+    private static final long SEED = 2872345;
     private static final Random RANDOM = new Random(SEED);
 
     /**
